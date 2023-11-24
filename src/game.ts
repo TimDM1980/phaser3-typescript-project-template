@@ -10,29 +10,25 @@ export default class Demo extends Phaser.Scene
     preload ()
     {
         this.load.image('logo', 'assets/phaser3-logo.png');
-        this.load.image('libs', 'assets/libs.png');
         this.load.glsl('bundle', 'assets/plasma-bundle.glsl.js');
         this.load.glsl('stars', 'assets/starfields.glsl.js');
     }
 
     create ()
     {
-        this.add.shader('RGB Shift Field', 0, 0, 800, 600).setOrigin(0);
+        const particles = this.add.particles(0, 0, 'red', {
+            speed: 100,
+            scale: { start: 1, end: 0 },
+            blendMode: 'ADD'
+        });
 
-        this.add.shader('Plasma', 0, 412, 800, 172).setOrigin(0);
+        const logo = this.physics.add.image(400, 100, 'logo');
 
-        this.add.image(400, 300, 'libs');
+        logo.setVelocity(100, 200);
+        logo.setBounce(1, 1);
+        logo.setCollideWorldBounds(true);
 
-        const logo = this.add.image(400, 70, 'logo');
-
-        this.tweens.add({
-            targets: logo,
-            y: 350,
-            duration: 1500,
-            ease: 'Sine.inOut',
-            yoyo: true,
-            repeat: -1
-        })
+        particles.startFollow(logo);
     }
 }
 
@@ -41,7 +37,13 @@ const config = {
     backgroundColor: '#125555',
     width: 800,
     height: 600,
-    scene: Demo
+    scene: Demo,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 200 }
+        }
+    }
 };
 
 const game = new Phaser.Game(config);
