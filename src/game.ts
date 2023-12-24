@@ -1,16 +1,13 @@
 import * as Phaser from "phaser";
 
 // TODO
-
-// audio prots random
 // eigen sprites
 // refactor: remove duplication, extract classes, ...
 // groter veld / centreren / fullscreen
-// beginscherm met keys en press to start
-// game over scherm met winnaar en press space to play again
-// player drops in at random X
-// andere gravity?
-// random stars erbij
+// beginscherm met legende en keys en press O/P to start
+// game-over scherm met winnaar en press space to play again
+// random stars erbij ipv wachten tot alle 10 weg
+// bundle and deploy somewhere eg netlify or github pages
 
 const WIDTH = 800;
 const HEIGHT = 600;
@@ -43,6 +40,7 @@ export default class Demo extends Phaser.Scene {
     O: Phaser.Input.Keyboard.Key;
     P: Phaser.Input.Keyboard.Key;
   };
+  private farts: (Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound)[] = [];
 
   preload() {
     this.load.image("sky", "assets/sky.png");
@@ -54,9 +52,17 @@ export default class Demo extends Phaser.Scene {
       frameWidth: 32,
       frameHeight: 48,
     });
+
+    this.load.audio("fart1", "assets/fart1.mp3");
+    this.load.audio("fart2", "assets/fart2.mp3");
+    this.load.audio("fart3", "assets/fart3.mp3");
   }
 
   create() {
+    this.farts.push(this.sound.add("fart1"));
+    this.farts.push(this.sound.add("fart2"));
+    this.farts.push(this.sound.add("fart3"));
+
     const sky = this.add.image(WIDTH / 2, HEIGHT / 2, "sky");
     sky.displayWidth = WIDTH;
     sky.displayHeight = HEIGHT;
@@ -306,6 +312,8 @@ function collectStar(player, star) {
   }
   bomb.setBounce(1);
   bomb.setVelocity(randomVelocity(), player.name === "SINGLE" ? 20 : -300);
+
+  this.farts[Phaser.Math.Between(0, 2)].play();
 }
 
 function randomVelocity() {
