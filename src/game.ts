@@ -286,30 +286,23 @@ function collectStar(player, star) {
     default:
       bombs = this.playerSingleBombs;
   }
-  let bombKey;
-  switch (player.name) {
-    case "ORANGE":
-      bombKey = "ball";
-      break;
-    case "PINK":
-      bombKey = "elephant";
-      break;
-    default:
-      bombKey = "bomb";
-  }
 
-  var singleX =
-    player.x < 400
-      ? Phaser.Math.Between(400, 800)
-      : Phaser.Math.Between(0, 400);
-  var bomb =
-    player.name === "SINGLE"
-      ? bombs.create(singleX, 16, bombKey)
-      : bombs.create(player.x, player.y, bombKey);
-  player.name === "SINGLE"
-    ? bomb.setVelocity(Phaser.Math.Between(-200, 200), 20)
-    : bomb.setVelocity(randomVelocity(), randomVelocity());
+  let bomb;
+  if (player.name === "SINGLE") {
+    var singleX =
+      player.x < 400
+        ? Phaser.Math.Between(400, 800)
+        : Phaser.Math.Between(0, 400);
+    bomb = bombs.create(singleX, 16, "bomb");
+  } else {
+    bomb = bombs.create(
+      player.x,
+      player.y,
+      player.name === "ORANGE" ? "ball" : "elephant",
+    );
+  }
   bomb.setBounce(1);
+  bomb.setVelocity(randomVelocity(), player.name === "SINGLE" ? 20 : -300);
 }
 
 function randomVelocity() {
