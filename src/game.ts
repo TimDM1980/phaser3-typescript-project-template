@@ -48,7 +48,6 @@ export default class Demo extends Phaser.Scene {
     this.load.image("sky", "assets/sky.png");
     this.load.image("ground", "assets/platform.png");
     this.load.image("star", "assets/star.png");
-    this.load.image("bomb", "assets/bomb.png");
     this.load.image("ball", "assets/ball.png");
     this.load.image("elephant", "assets/elephant.png");
     this.load.spritesheet("dude", "assets/dude.png", {
@@ -293,7 +292,11 @@ function collectStar(player, star) {
       player.x < 400
         ? Phaser.Math.Between(400, 800)
         : Phaser.Math.Between(0, 400);
-    bomb = bombs.create(singleX, 16, "bomb");
+    bomb = bombs.create(
+      singleX,
+      16,
+      Phaser.Math.Between(0, 1) ? "ball" : "elephant",
+    );
   } else {
     bomb = bombs.create(
       player.x,
@@ -306,12 +309,9 @@ function collectStar(player, star) {
 }
 
 function randomVelocity() {
-  const positiveOrNegative = Phaser.Math.Between(0, 1);
-  if (positiveOrNegative) {
-    return Phaser.Math.Between(100, 200);
-  } else {
-    return Phaser.Math.Between(-200, -100);
-  }
+  return Phaser.Math.Between(0, 1)
+    ? Phaser.Math.Between(50, 150)
+    : Phaser.Math.Between(-150, -50);
 }
 
 function hitBomb(
