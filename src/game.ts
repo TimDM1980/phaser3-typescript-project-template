@@ -1,18 +1,17 @@
 import * as Phaser from "phaser";
 
 // TODO
+
+// groter veld / centreren / fullscreen
+// basketball / drunk elephant png
+// eigen sprites
+// player prots
+// audio prots random
+
 // beginscherm met keys en press to start
 // game over scherm met winnaar en press space to play again
-// score en player coloring
-// random player dropping in
-// audio prots random
-// player prots
-// basketball / drunk elephant png
-// groter veld / centreren / fullscreen
+// player drops in at random X
 // andere gravity?
-// bounce weg
-// eigen sprites
-// 2 players blauw roze
 // random stars erbij
 
 const WIDTH = 800;
@@ -23,7 +22,6 @@ export default class Demo extends Phaser.Scene {
   private playerOrange: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private playerPink: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
-  private keyA: Phaser.Input.Keyboard.Key;
   private scoreTextOrange: Phaser.GameObjects.Text;
   private scoreTextPink: Phaser.GameObjects.Text;
   private scoreOrange = 0;
@@ -31,6 +29,12 @@ export default class Demo extends Phaser.Scene {
   private stars: Phaser.Physics.Arcade.Group;
   private bombs: Phaser.Physics.Arcade.Group;
   private gameOver = false;
+  private wsadKeys: {
+    W: Phaser.Input.Keyboard.Key,
+    S: Phaser.Input.Keyboard.Key,
+    A: Phaser.Input.Keyboard.Key,
+    D: Phaser.Input.Keyboard.Key,
+  };
 
   preload() {
     this.load.image("sky", "assets/sky.png");
@@ -59,12 +63,12 @@ export default class Demo extends Phaser.Scene {
     topPlatform.displayWidth = 160;
     topPlatform.refreshBody();
 
-    this.playerOrange = this.physics.add.sprite(300, 400, "dude");
+    this.playerOrange = this.physics.add.sprite(100, 400, "dude");
     this.playerOrange.setCollideWorldBounds(true);
     this.playerOrange.setTint(0xff9900);
     this.playerOrange.setName('ORANGE');
     this.physics.add.collider(this.playerOrange, platforms);
-    this.playerPink = this.physics.add.sprite(500, 400, "dude");
+    this.playerPink = this.physics.add.sprite(700, 400, "dude");
     this.playerPink.setCollideWorldBounds(true);
     this.playerPink.setTint(0xff00a6);
     this.playerPink.setName('PINK');
@@ -91,7 +95,7 @@ export default class Demo extends Phaser.Scene {
     });
 
     this.cursors = this.input.keyboard.createCursorKeys();
-    // this.keyA = this.input.keyboard.addKey('A');
+    this.wsadKeys = this.input.keyboard.addKeys('W,S,A,D') as any;
 
     this.stars = this.physics.add.group({
       key: "star",
@@ -117,7 +121,6 @@ export default class Demo extends Phaser.Scene {
     this.scoreTextPink = this.add.text(600, 16, "Score: 0", {
       fontSize: "32px",
       color: "#ff00a6",
-      align: "right",
     });
   }
 
@@ -130,27 +133,32 @@ export default class Demo extends Phaser.Scene {
     }
 
     if (this.cursors.left.isDown) {
+      this.playerPink.setVelocityX(-160);
+      this.playerPink.anims.play("left", true);
+    } else if (this.cursors.right.isDown) {
+      this.playerPink.setVelocityX(160);
+      this.playerPink.anims.play("right", true);
+    } else {
+      this.playerPink.setVelocityX(0);
+      this.playerPink.anims.play("turn");
+    }
+    if (this.cursors.up.isDown && this.playerPink.body.touching.down) {
+      this.playerPink.setVelocityY(-330);
+    }
+
+    if (this.wsadKeys.A.isDown) {
       this.playerOrange.setVelocityX(-160);
       this.playerOrange.anims.play("left", true);
-    } else if (this.cursors.right.isDown) {
+    } else if (this.wsadKeys.D.isDown) {
       this.playerOrange.setVelocityX(160);
       this.playerOrange.anims.play("right", true);
     } else {
       this.playerOrange.setVelocityX(0);
       this.playerOrange.anims.play("turn");
     }
-
-    if (this.cursors.up.isDown && this.playerOrange.body.touching.down) {
+    if (this.wsadKeys.W.isDown && this.playerOrange.body.touching.down) {
       this.playerOrange.setVelocityY(-330);
     }
-
-    // if (this.keyA?.isDown) {
-    //   this.playerPink.setVelocityX(-160);
-    //   this.playerPink.anims.play("left", true);
-    // } else {
-    //   this.playerPink.setVelocityX(0);
-    //   this.playerPink.anims.play("turn");
-    // }
   }
 }
 
@@ -185,7 +193,7 @@ function hitBomb(
   bomb,
 ) {
   this.physics.pause();
-  player.setTint(0xff0000);
+  player.setTint(0x000000);
   player.anims.play("turn");
   this.gameOver = true;
 }
