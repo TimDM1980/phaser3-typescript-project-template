@@ -43,6 +43,8 @@ export default class Demo extends Phaser.Scene {
     this.load.image("ground", "assets/platform.png");
     this.load.image("star", "assets/star.png");
     this.load.image("bomb", "assets/bomb.png");
+    this.load.image("ball", "assets/ball.png",);
+    this.load.image("elephant", "assets/elephant.png",);
     this.load.spritesheet("dude", "assets/dude.png", {
       frameWidth: 32,
       frameHeight: 48,
@@ -131,6 +133,12 @@ export default class Demo extends Phaser.Scene {
   }
 
   update() {
+    this.playerOrangeBombs.children.iterate((child: any) =>
+          child.rotation += 5
+    );
+    this.playerPinkBombs.children.iterate((child: any) =>
+          child.rotation += -5
+    );
     if (this.cursors.space.isDown && this.gameOver) {
       location.reload();
     }
@@ -186,7 +194,7 @@ function collectStar(player, star) {
   }
 
   const bombs = player.name === 'ORANGE' ? this.playerOrangeBombs : this.playerPinkBombs;
-  var bomb = bombs.create(player.x, player.y, "bomb");
+  var bomb = bombs.create(player.x, player.y, player.name === 'ORANGE' ? "ball" : "elephant");
   bomb.setTint(player.name === 'ORANGE' ? TINT_ORANGE : TINT_PINK);
   bomb.setBounce(1);
   bomb.setVelocity(randomVelocity(), randomVelocity());
