@@ -2,12 +2,12 @@ import * as Phaser from "phaser";
 
 // TODO
 
-// groter veld / centreren / fullscreen
 // basketball / drunk elephant png
-// eigen sprites
-// player prots
 // audio prots random
+// eigen sprites
 
+// refactor: remove duplication, extract classes, ...
+// groter veld / centreren / fullscreen
 // beginscherm met keys en press to start
 // game over scherm met winnaar en press space to play again
 // player drops in at random X
@@ -16,7 +16,8 @@ import * as Phaser from "phaser";
 
 const WIDTH = 800;
 const HEIGHT = 600;
-type PlayerName = 'ORANGE' | 'PINK';
+const TINT_ORANGE = 0xff9900;
+const TINT_PINK = 0xff00a6;
 
 export default class Demo extends Phaser.Scene {
   private playerOrange: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
@@ -27,7 +28,8 @@ export default class Demo extends Phaser.Scene {
   private scoreOrange = 0;
   private scorePink = 0;
   private stars: Phaser.Physics.Arcade.Group;
-  private bombs: Phaser.Physics.Arcade.Group;
+  private playerOrangeBombs: Phaser.Physics.Arcade.Group;
+  private playerPinkBombs: Phaser.Physics.Arcade.Group;
   private gameOver = false;
   private wsadKeys: {
     W: Phaser.Input.Keyboard.Key,
@@ -48,10 +50,12 @@ export default class Demo extends Phaser.Scene {
   }
 
   create() {
-    this.add.image(400, 300, "sky");
+    const sky = this.add.image(WIDTH/2, HEIGHT/2, "sky");
+    sky.displayWidth = WIDTH;
+    sky.displayHeight = HEIGHT;
 
     const platforms = this.physics.add.staticGroup();
-    const ground = platforms.create(400, HEIGHT - 16, "ground");
+    const ground = platforms.create(WIDTH/2, HEIGHT - 16, "ground");
     ground.displayWidth = WIDTH;
     ground.refreshBody();
     const level1 = platforms.create(500, 450, "ground");
@@ -65,12 +69,12 @@ export default class Demo extends Phaser.Scene {
 
     this.playerOrange = this.physics.add.sprite(100, 400, "dude");
     this.playerOrange.setCollideWorldBounds(true);
-    this.playerOrange.setTint(0xff9900);
+    this.playerOrange.setTint(TINT_ORANGE);
     this.playerOrange.setName('ORANGE');
     this.physics.add.collider(this.playerOrange, platforms);
     this.playerPink = this.physics.add.sprite(700, 400, "dude");
     this.playerPink.setCollideWorldBounds(true);
-    this.playerPink.setTint(0xff00a6);
+    this.playerPink.setTint(TINT_PINK);
     this.playerPink.setName('PINK');
     this.physics.add.collider(this.playerPink, platforms);
 
@@ -109,10 +113,12 @@ export default class Demo extends Phaser.Scene {
       child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8)),
     );
 
-    this.bombs = this.physics.add.group();
-    this.physics.add.collider(this.bombs, platforms);
-    this.physics.add.overlap(this.playerOrange, this.bombs, hitBomb, null, this);
-    this.physics.add.overlap(this.playerPink, this.bombs, hitBomb, null, this);
+    this.playerOrangeBombs = this.physics.add.group();
+    this.playerPinkBombs = this.physics.add.group();
+    this.physics.add.collider(this.playerOrangeBombs, platforms);
+    this.physics.add.collider(this.playerPinkBombs, platforms);
+    this.physics.add.overlap(this.playerOrange, this.playerPinkBombs, hitBomb, null, this);
+    this.physics.add.overlap(this.playerPink, this.playerOrangeBombs, hitBomb, null, this);
 
     this.scoreTextOrange = this.add.text(16, 16, "Score: 0", {
       fontSize: "32px",
@@ -179,13 +185,20 @@ function collectStar(player, star) {
     );
   }
 
-  var x =
-    player.x < 400
-      ? Phaser.Math.Between(400, 800)
-      : Phaser.Math.Between(0, 400);
-  var bomb = this.bombs.create(x, 16, "bomb");
+  const bombs = player.name === 'ORANGE' ? this.playerOrangeBombs : this.playerPinkBombs;
+  var bomb = bombs.create(player.x, player.y, "bomb");
+  bomb.setTint(player.name === 'ORANGE' ? TINT_ORANGE : TINT_PINK);
   bomb.setBounce(1);
-  bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+  bomb.setVelocity(randomVelocity(), randomVelocity());
+}
+
+function randomVelocity() {
+  const positiveOrNegative = Phaser.Math.Between(0,1);
+  if (positiveOrNegative) {
+    return Phaser.Math.Between(100, 200);
+  } else {
+    return Phaser.Math.Between(-200, -100);
+  }
 }
 
 function hitBomb(
@@ -202,6 +215,7 @@ const config = {
   type: Phaser.AUTO,
   width: WIDTH,
   height: HEIGHT,
+  zoom: 1.5,
   scene: Demo,
   physics: {
     default: "arcade",
