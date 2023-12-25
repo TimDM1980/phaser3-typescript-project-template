@@ -6,7 +6,6 @@ import * as Phaser from 'phaser';
 // scenes
 //  beginscherm met legende en keys en press J/Y/V to start
 //  game-over scherm met winnaar en press space to play again
-// bundle and deploy somewhere eg netlify or github pages
 
 const WIDTH = 800;
 const HEIGHT = 600;
@@ -25,7 +24,7 @@ class Game extends Phaser.Scene {
   private bombs2: Phaser.Physics.Arcade.Group;
 
   private stars: Phaser.Physics.Arcade.Group;
-  private gameOver = true;
+  private gameState: 'INITIAL' | 'PLAYING' | 'GAMEOVER' = 'INITIAL';
   private vsPlay = false;
   private farts: (Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound)[] = [];
 
@@ -88,7 +87,7 @@ class Game extends Phaser.Scene {
     centerTop.displayWidth = 150;
     centerTop.refreshBody();
 
-    this.player1 = this.physics.add.sprite(100, 400, 'yane');
+    this.player1 = this.physics.add.sprite(100, 400, 'yane', 5);
     this.player1.setCollideWorldBounds(true);
     this.player1.setName(PLAYER1);
     this.physics.add.collider(this.player1, platforms);
@@ -190,7 +189,7 @@ class Game extends Phaser.Scene {
   }
 
   private calculateBombSpawnXForSinglePlayer(player) {
-    const farAwayFromPlayer = player.x + (WIDTH / 2);
+    const farAwayFromPlayer = player.x + WIDTH / 2;
     const someRandomness = Phaser.Math.Between(-200, 200);
     const spawnX = farAwayFromPlayer + someRandomness;
     const fixOverflow = spawnX % WIDTH;
@@ -206,30 +205,35 @@ class Game extends Phaser.Scene {
     this.physics.pause();
     player.setTint(0xff0000);
     player.anims.play(player.name + '_turn');
-    this.gameOver = true;
+    this.gameState = 'GAMEOVER';
   }
 
   update() {
     this.bombs1.children.iterate((child: any) => (child.rotation += 0.05));
     this.bombs2.children.iterate((child: any) => (child.rotation += 0.05));
 
-    if (this.gameOver) {
+    if (this.gameState === 'GAMEOVER') {
       if (this.cursors.space.isDown) {
-        location.reload();
+        this.gameState = 'INITIAL';
+        this.scene.restart();
       }
+      return;
+    }
+
+    if (this.gameState === 'INITIAL') {
       if (this.configKeys.J.isDown) {
         this.player1.disableBody(true, true);
         this.scoreText1.destroy();
-        this.gameOver = false;
+        this.gameState = 'PLAYING';
       }
       if (this.configKeys.Y.isDown) {
         this.player2.disableBody(true, true);
         this.scoreText2.destroy();
-        this.gameOver = false;
+        this.gameState = 'PLAYING';
       }
       if (this.configKeys.V.isDown) {
         this.vsPlay = true;
-        this.gameOver = false;
+        this.gameState = 'PLAYING';
       }
       return;
     }
