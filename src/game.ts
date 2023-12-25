@@ -4,7 +4,7 @@ import * as Phaser from "phaser";
 // eigen sprites
 // refactor: remove duplication, extract classes, ...
 // groter veld / centreren / fullscreen
-// beginscherm met legende en keys en press O/P to start
+// beginscherm met legende en keys en press J/Y/V to start
 // game-over scherm met winnaar en press space to play again
 // random stars erbij ipv wachten tot alle 10 weg
 // bundle and deploy somewhere eg netlify or github pages
@@ -14,22 +14,19 @@ const HEIGHT = 600;
 const TINT_ORANGE = 0xff9900;
 const TINT_PINK = 0xff00a6;
 
-export default class Demo extends Phaser.Scene {
-  private playerSingle: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+class Game extends Phaser.Scene {
   private playerOrange: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private playerPink: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
-  private scoreTextSingle: Phaser.GameObjects.Text;
   private scoreTextOrange: Phaser.GameObjects.Text;
   private scoreTextPink: Phaser.GameObjects.Text;
-  private scoreSingle = 0;
   private scoreOrange = 0;
   private scorePink = 0;
   private stars: Phaser.Physics.Arcade.Group;
-  private playerSingleBombs: Phaser.Physics.Arcade.Group;
   private playerOrangeBombs: Phaser.Physics.Arcade.Group;
   private playerPinkBombs: Phaser.Physics.Arcade.Group;
   private gameOver = true;
+  private vsPlay = false;
   private wsadKeys: {
     W: Phaser.Input.Keyboard.Key;
     S: Phaser.Input.Keyboard.Key;
@@ -37,10 +34,15 @@ export default class Demo extends Phaser.Scene {
     D: Phaser.Input.Keyboard.Key;
   };
   private configKeys: {
-    O: Phaser.Input.Keyboard.Key;
-    P: Phaser.Input.Keyboard.Key;
+    J: Phaser.Input.Keyboard.Key;
+    Y: Phaser.Input.Keyboard.Key;
+    V: Phaser.Input.Keyboard.Key;
   };
-  private farts: (Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound)[] = [];
+  private farts: (
+    | Phaser.Sound.NoAudioSound
+    | Phaser.Sound.HTML5AudioSound
+    | Phaser.Sound.WebAudioSound
+  )[] = [];
 
   preload() {
     this.load.image("sky", "assets/sky.png");
@@ -80,10 +82,6 @@ export default class Demo extends Phaser.Scene {
     topPlatform.displayWidth = 160;
     topPlatform.refreshBody();
 
-    this.playerSingle = this.physics.add.sprite(200, 400, "dude");
-    this.playerSingle.setCollideWorldBounds(true);
-    this.playerSingle.setName("SINGLE");
-    this.physics.add.collider(this.playerSingle, platforms);
     this.playerOrange = this.physics.add.sprite(100, 400, "dude");
     this.playerOrange.setCollideWorldBounds(true);
     this.playerOrange.setTint(TINT_ORANGE);
@@ -117,7 +115,7 @@ export default class Demo extends Phaser.Scene {
 
     this.cursors = this.input.keyboard.createCursorKeys();
     this.wsadKeys = this.input.keyboard.addKeys("W,S,A,D") as any;
-    this.configKeys = this.input.keyboard.addKeys("O,P") as any;
+    this.configKeys = this.input.keyboard.addKeys("J,Y,V") as any;
 
     this.stars = this.physics.add.group({
       key: "star",
@@ -125,13 +123,6 @@ export default class Demo extends Phaser.Scene {
       setXY: { x: 12, y: 0, stepX: 70 },
     });
     this.physics.add.collider(this.stars, platforms);
-    this.physics.add.overlap(
-      this.playerSingle,
-      this.stars,
-      collectStar,
-      null,
-      this,
-    );
     this.physics.add.overlap(
       this.playerOrange,
       this.stars,
@@ -150,38 +141,14 @@ export default class Demo extends Phaser.Scene {
       child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8)),
     );
 
-    this.playerSingleBombs = this.physics.add.group();
     this.playerOrangeBombs = this.physics.add.group();
     this.playerPinkBombs = this.physics.add.group();
-    this.physics.add.collider(this.playerSingleBombs, platforms);
     this.physics.add.collider(this.playerOrangeBombs, platforms);
     this.physics.add.collider(this.playerPinkBombs, platforms);
-    this.physics.add.overlap(
-      this.playerSingle,
-      this.playerSingleBombs,
-      hitBomb,
-      null,
-      this,
-    );
-    this.physics.add.overlap(
-      this.playerOrange,
-      this.playerPinkBombs,
-      hitBomb,
-      null,
-      this,
-    );
-    this.physics.add.overlap(
-      this.playerPink,
-      this.playerOrangeBombs,
-      hitBomb,
-      null,
-      this,
-    );
 
-    this.scoreTextSingle = this.add.text(16, 16, "Score: 0", {
-      fontSize: "32px",
-      color: "#000000",
-    });
+    this.hitBombOverlap(this.playerOrange, this.playerPinkBombs);
+    this.hitBombOverlap(this.playerPink, this.playerOrangeBombs);
+
     this.scoreTextOrange = this.add.text(16, 16, "Score: 0", {
       fontSize: "32px",
       color: "#ff9900",
@@ -193,9 +160,6 @@ export default class Demo extends Phaser.Scene {
   }
 
   update() {
-    this.playerSingleBombs.children.iterate(
-      (child: any) => (child.rotation += 0.05),
-    );
     this.playerOrangeBombs.children.iterate(
       (child: any) => (child.rotation += 0.05),
     );
@@ -207,57 +171,71 @@ export default class Demo extends Phaser.Scene {
       if (this.cursors.space.isDown) {
         location.reload();
       }
-      if (this.configKeys.O.isDown) {
-        this.playerOrange.disableBody(true, true);
+      if (this.configKeys.J.isDown) {
         this.playerPink.disableBody(true, true);
-        this.scoreTextOrange.destroy();
         this.scoreTextPink.destroy();
         this.gameOver = false;
       }
-      if (this.configKeys.P.isDown) {
-        this.playerSingle.disableBody(true, true);
-        this.scoreTextSingle.destroy();
+      if (this.configKeys.Y.isDown) {
+        this.playerOrange.disableBody(true, true);
+        this.scoreTextOrange.destroy();
+        this.gameOver = false;
+      }
+      if (this.configKeys.V.isDown) {
+        this.vsPlay = true;
         this.gameOver = false;
       }
       return;
     }
 
-    if (this.cursors.left.isDown) {
-      this.playerSingle.setVelocityX(-160);
-      this.playerSingle.anims.play("left", true);
-      this.playerPink.setVelocityX(-160);
-      this.playerPink.anims.play("left", true);
-    } else if (this.cursors.right.isDown) {
-      this.playerSingle.setVelocityX(160);
-      this.playerSingle.anims.play("right", true);
-      this.playerPink.setVelocityX(160);
-      this.playerPink.anims.play("right", true);
+    this.bindPlayerKeys(this.playerPink, {
+      left: this.cursors.left,
+      right: this.cursors.right,
+      up: this.cursors.up,
+    });
+    if (this.vsPlay) {
+      this.bindPlayerKeys(this.playerOrange, {
+        left: this.wsadKeys.A,
+        right: this.wsadKeys.D,
+        up: this.wsadKeys.W,
+      });
     } else {
-      this.playerSingle.setVelocityX(0);
-      this.playerSingle.anims.play("turn");
-      this.playerPink.setVelocityX(0);
-      this.playerPink.anims.play("turn");
+      this.bindPlayerKeys(this.playerOrange, {
+        left: this.cursors.left,
+        right: this.cursors.right,
+        up: this.cursors.up,
+      });
     }
-    if (this.cursors.up.isDown && this.playerSingle.body.touching.down) {
-      this.playerSingle.setVelocityY(-330);
-    }
-    if (this.cursors.up.isDown && this.playerPink.body.touching.down) {
-      this.playerPink.setVelocityY(-330);
-    }
+  }
 
-    if (this.wsadKeys.A.isDown) {
-      this.playerOrange.setVelocityX(-160);
-      this.playerOrange.anims.play("left", true);
-    } else if (this.wsadKeys.D.isDown) {
-      this.playerOrange.setVelocityX(160);
-      this.playerOrange.anims.play("right", true);
+  private bindPlayerKeys(
+    player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody,
+    keys: {
+      left: Phaser.Input.Keyboard.Key;
+      right: Phaser.Input.Keyboard.Key;
+      up: Phaser.Input.Keyboard.Key;
+    },
+  ) {
+    if (keys.left.isDown) {
+      player.setVelocityX(-160);
+      player.anims.play("left", true);
+    } else if (keys.right.isDown) {
+      player.setVelocityX(160);
+      player.anims.play("right", true);
     } else {
-      this.playerOrange.setVelocityX(0);
-      this.playerOrange.anims.play("turn");
+      player.setVelocityX(0);
+      player.anims.play("turn");
     }
-    if (this.wsadKeys.W.isDown && this.playerOrange.body.touching.down) {
-      this.playerOrange.setVelocityY(-330);
+    if (keys.up.isDown && player.body.touching.down) {
+      player.setVelocityY(-330);
     }
+  }
+
+  private hitBombOverlap(
+    player: Phaser.Types.Physics.Arcade.ArcadeColliderType,
+    bombs: Phaser.Types.Physics.Arcade.ArcadeColliderType,
+  ) {
+    this.physics.add.overlap(player, bombs, hitBomb, null, this);
   }
 }
 
@@ -266,12 +244,9 @@ function collectStar(player, star) {
   if (player.name === "ORANGE") {
     this.scoreOrange += 10;
     this.scoreTextOrange.setText("Score: " + this.scoreOrange);
-  } else if (player.name === "PINK") {
+  } else {
     this.scorePink += 10;
     this.scoreTextPink.setText("Score: " + this.scorePink);
-  } else {
-    this.scoreSingle += 10;
-    this.scoreTextSingle.setText("Score: " + this.scoreSingle);
   }
 
   if (this.stars.countActive(true) === 0) {
@@ -281,42 +256,39 @@ function collectStar(player, star) {
   }
 
   let bombs;
-  switch (player.name) {
-    case "ORANGE":
-      bombs = this.playerOrangeBombs;
-      break;
-    case "PINK":
-      bombs = this.playerPinkBombs;
-      break;
-    default:
-      bombs = this.playerSingleBombs;
+  if (this.vsPlay) {
+    bombs =
+      player.name === "ORANGE" ? this.playerOrangeBombs : this.playerPinkBombs;
+  } else {
+    bombs =
+      player.name === "ORANGE" ? this.playerPinkBombs : this.playerOrangeBombs;
   }
 
   let bomb;
-  if (player.name === "SINGLE") {
-    var singleX =
-      player.x < 400
-        ? Phaser.Math.Between(400, 800)
-        : Phaser.Math.Between(0, 400);
-    bomb = bombs.create(
-      singleX,
-      16,
-      Phaser.Math.Between(0, 1) ? "ball" : "elephant",
-    );
-  } else {
+  if (this.vsPlay) {
     bomb = bombs.create(
       player.x,
       player.y,
       player.name === "ORANGE" ? "ball" : "elephant",
     );
+  } else {
+    var deathFromAbove =
+      player.x < 400
+        ? Phaser.Math.Between(400, 800)
+        : Phaser.Math.Between(0, 400);
+    bomb = bombs.create(
+      deathFromAbove,
+      16,
+      player.name === "ORANGE" ? "elephant" : "ball",
+    );
   }
   bomb.setBounce(1);
-  bomb.setVelocity(randomVelocity(), player.name === "SINGLE" ? 20 : -300);
+  bomb.setVelocity(randomVelocity_50_150(), this.vsPlay ? -300 : 20);
 
   this.farts[Phaser.Math.Between(0, 2)].play();
 }
 
-function randomVelocity() {
+function randomVelocity_50_150() {
   return Phaser.Math.Between(0, 1)
     ? Phaser.Math.Between(50, 150)
     : Phaser.Math.Between(-150, -50);
@@ -337,7 +309,7 @@ const config = {
   width: WIDTH,
   height: HEIGHT,
   zoom: 1.5,
-  scene: Demo,
+  scene: Game,
   physics: {
     default: "arcade",
     arcade: {
@@ -347,4 +319,4 @@ const config = {
   },
 };
 
-const game = new Phaser.Game(config);
+new Phaser.Game(config);
