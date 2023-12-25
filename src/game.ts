@@ -1,7 +1,6 @@
 import * as Phaser from 'phaser';
 
 // TODO
-// eigen sprites
 // refactor: remove duplication, extract classes, ...
 // groter veld / centreren / fullscreen
 // scenes
