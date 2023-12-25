@@ -2,10 +2,10 @@ import * as Phaser from 'phaser';
 
 // TODO
 // refactor: remove duplication, extract classes, ...
-// groter veld / centreren / fullscreen
+// groter veld / centreren / fullscreen / zoom afhankelijk van window size
 // scenes
 //  beginscherm met legende en keys en press J/Y/V to start
-//   game-over scherm met winnaar en press space to play again
+//  game-over scherm met winnaar en press space to play again
 // bundle and deploy somewhere eg netlify or github pages
 
 const WIDTH = 800;
@@ -76,9 +76,12 @@ class Game extends Phaser.Scene {
     const ground = platforms.create(WIDTH / 2, HEIGHT - 16, 'ground');
     ground.displayWidth = WIDTH;
     ground.refreshBody();
-    const level1 = platforms.create(500, 450, 'ground');
+    const level1 = platforms.create(450, 450, 'ground');
     level1.displayWidth = 200;
     level1.refreshBody();
+    const mini = platforms.create(570, 300, 'ground');
+    mini.displayWidth = 40;
+    mini.refreshBody();
     platforms.create(50, 300, 'ground');
     platforms.create(880, 250, 'ground');
     const topPlatform = platforms.create(400, 150, 'ground');
@@ -164,7 +167,12 @@ class Game extends Phaser.Scene {
       this.scoreText2.setText('Score: ' + this.score2);
     }
 
-    this.throwBomb(player);
+    const numberOfBombsToThrow = Math.ceil((player.name === PLAYER1 ? this.score1 : this.score2) / 120);
+    console.log(numberOfBombsToThrow);
+    for (let i = 0; i < numberOfBombsToThrow; i++) {
+      this.throwBomb(player);
+    }
+
     this.farts[Phaser.Math.Between(0, 2)].play();
   }
 
