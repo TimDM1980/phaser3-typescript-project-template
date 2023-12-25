@@ -174,7 +174,7 @@ class Game extends Phaser.Scene {
     } else {
       const bombs = player.name === 'jelko' ? this.bombsYane : this.bombsJelko;
       const deathFromAbove = player.x < WIDTH / 2 ? Phaser.Math.Between(WIDTH / 2, WIDTH) : Phaser.Math.Between(0, WIDTH / 2);
-      const bomb = bombs.create(deathFromAbove, 16, player.name === 'jelko' ? 'elephant' : 'ball');
+      const bomb = bombs.create(deathFromAbove, 16, Phaser.Math.Between(0, 1) ? 'elephant' : 'ball');
       bomb.setVelocity(this.randomPosNegVelocity(player.x > WIDTH / 2, 50, 150), 20);
       bomb.setBounce(0.9);
     }
