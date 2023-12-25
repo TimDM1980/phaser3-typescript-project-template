@@ -120,6 +120,8 @@ class Game extends Phaser.Scene {
     this.physics.add.overlap(this.player1, this.bombs2, this.hitBomb, null, this);
     this.physics.add.overlap(this.player2, this.bombs1, this.hitBomb, null, this);
 
+    this.score1 = 0;
+    this.score2 = 0;
     this.scoreText1 = this.add.text(16, 16, 'Score: 0', {
       fontSize: '32px',
       color: '#ff00a6',
