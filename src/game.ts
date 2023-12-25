@@ -44,7 +44,7 @@ class Game extends Phaser.Scene {
 
   preload() {
     this.load.image('sky', 'assets/sky.png');
-    this.load.image('ground', 'assets/platform.png');
+    this.load.image('platform', 'assets/platform.png');
     this.load.image('star', 'assets/star.png');
     this.load.image('ball', 'assets/ball.png');
     this.load.image('elephant', 'assets/elephant.png');
@@ -73,20 +73,20 @@ class Game extends Phaser.Scene {
     sky.displayHeight = HEIGHT;
 
     const platforms = this.physics.add.staticGroup();
-    const ground = platforms.create(WIDTH / 2, HEIGHT - 16, 'ground');
+    const ground = platforms.create(WIDTH / 2, HEIGHT - 16, 'platform');
     ground.displayWidth = WIDTH;
     ground.refreshBody();
-    const level1 = platforms.create(450, 450, 'ground');
-    level1.displayWidth = 200;
-    level1.refreshBody();
-    const mini = platforms.create(570, 300, 'ground');
-    mini.displayWidth = 40;
+    const centerBottom = platforms.create(450, 450, 'platform');
+    centerBottom.displayWidth = 150;
+    centerBottom.refreshBody();
+    const mini = platforms.create(575, 300, 'platform');
+    mini.displayWidth = 37.5;
     mini.refreshBody();
-    platforms.create(50, 300, 'ground');
-    platforms.create(880, 250, 'ground');
-    const topPlatform = platforms.create(400, 150, 'ground');
-    topPlatform.displayWidth = 160;
-    topPlatform.refreshBody();
+    platforms.create(50, 300, 'platform');
+    platforms.create(875, 225, 'platform');
+    const centerTop = platforms.create(400, 150, 'platform');
+    centerTop.displayWidth = 150;
+    centerTop.refreshBody();
 
     this.player1 = this.physics.add.sprite(100, 400, 'yane');
     this.player1.setCollideWorldBounds(true);
@@ -168,7 +168,6 @@ class Game extends Phaser.Scene {
     }
 
     const numberOfBombsToThrow = Math.ceil((player.name === PLAYER1 ? this.score1 : this.score2) / 120);
-    console.log(numberOfBombsToThrow);
     for (let i = 0; i < numberOfBombsToThrow; i++) {
       this.throwBomb(player);
     }
@@ -184,11 +183,19 @@ class Game extends Phaser.Scene {
       bomb.setBounce(0.9);
     } else {
       const bombs = player.name === PLAYER1 ? this.bombs2 : this.bombs1;
-      const deathFromAbove = player.x < WIDTH / 2 ? Phaser.Math.Between(WIDTH / 2, WIDTH) : Phaser.Math.Between(0, WIDTH / 2);
-      const bomb = bombs.create(deathFromAbove, 16, Phaser.Math.Between(0, 1) ? 'elephant' : 'ball');
+      const bomb = bombs.create(this.calculateBombSpawnXForSinglePlayer(player), 16, Phaser.Math.Between(0, 1) ? 'elephant' : 'ball');
       bomb.setVelocity(this.randomPosNegVelocity(player.x > WIDTH / 2, 50, 150), 20);
       bomb.setBounce(0.9);
     }
+  }
+
+  private calculateBombSpawnXForSinglePlayer(player) {
+    const farAwayFromPlayer = player.x + (WIDTH / 2);
+    const someRandomness = Phaser.Math.Between(-200, 200);
+    const spawnX = farAwayFromPlayer + someRandomness;
+    const fixOverflow = spawnX % WIDTH;
+
+    return fixOverflow;
   }
 
   private randomPosNegVelocity(posNegCondition: boolean, randomMin: number, randomMax: number) {
@@ -227,24 +234,27 @@ class Game extends Phaser.Scene {
       return;
     }
 
-    this.bindPlayerKeys(this.player2, {
-      left: this.cursors.left,
-      right: this.cursors.right,
-      up: this.cursors.up,
-    });
     if (this.vsPlay) {
       this.bindPlayerKeys(this.player1, {
         left: this.wsadKeys.A,
         right: this.wsadKeys.D,
         up: this.wsadKeys.W,
+        down: this.wsadKeys.S,
       });
     } else {
       this.bindPlayerKeys(this.player1, {
         left: this.cursors.left,
         right: this.cursors.right,
         up: this.cursors.up,
+        down: this.cursors.down,
       });
     }
+    this.bindPlayerKeys(this.player2, {
+      left: this.cursors.left,
+      right: this.cursors.right,
+      up: this.cursors.up,
+      down: this.cursors.down,
+    });
   }
 
   private bindPlayerKeys(
@@ -253,6 +263,7 @@ class Game extends Phaser.Scene {
       left: Phaser.Input.Keyboard.Key;
       right: Phaser.Input.Keyboard.Key;
       up: Phaser.Input.Keyboard.Key;
+      down: Phaser.Input.Keyboard.Key;
     },
   ) {
     if (keys.left.isDown) {
@@ -265,8 +276,12 @@ class Game extends Phaser.Scene {
       player.setVelocityX(0);
       player.anims.play(player.name + '_turn');
     }
+
     if (keys.up.isDown && player.body.touching.down) {
       player.setVelocityY(-330);
+    }
+    if (keys.down.isDown && !player.body.touching.down) {
+      player.setVelocityY(600);
     }
   }
 }
