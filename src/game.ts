@@ -10,17 +10,19 @@ import * as Phaser from 'phaser';
 
 const WIDTH = 800;
 const HEIGHT = 600;
+const PLAYER1 = 'player1';
+const PLAYER2 = 'player2';
 
 class Game extends Phaser.Scene {
-  private playerJelko: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
-  private scoreTextJelko: Phaser.GameObjects.Text;
-  private scoreJelko = 0;
-  private bombsJelko: Phaser.Physics.Arcade.Group;
+  private player1: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+  private scoreText1: Phaser.GameObjects.Text;
+  private score1 = 0;
+  private bombs1: Phaser.Physics.Arcade.Group;
 
-  private playerYane: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
-  private scoreTextYane: Phaser.GameObjects.Text;
-  private scoreYane = 0;
-  private bombsYane: Phaser.Physics.Arcade.Group;
+  private player2: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+  private scoreText2: Phaser.GameObjects.Text;
+  private score2 = 0;
+  private bombs2: Phaser.Physics.Arcade.Group;
 
   private stars: Phaser.Physics.Arcade.Group;
   private gameOver = true;
@@ -46,6 +48,7 @@ class Game extends Phaser.Scene {
     this.load.image('star', 'assets/star.png');
     this.load.image('ball', 'assets/ball.png');
     this.load.image('elephant', 'assets/elephant.png');
+
     this.load.spritesheet('jelko', 'assets/jelko.png', {
       frameWidth: 32,
       frameHeight: 48,
@@ -82,17 +85,17 @@ class Game extends Phaser.Scene {
     topPlatform.displayWidth = 160;
     topPlatform.refreshBody();
 
-    this.playerJelko = this.physics.add.sprite(100, 400, 'jelko');
-    this.playerJelko.setCollideWorldBounds(true);
-    this.playerJelko.setName('jelko');
-    this.physics.add.collider(this.playerJelko, platforms);
-    this.createPlayerAnims('jelko');
+    this.player1 = this.physics.add.sprite(100, 400, 'yane');
+    this.player1.setCollideWorldBounds(true);
+    this.player1.setName(PLAYER1);
+    this.physics.add.collider(this.player1, platforms);
+    this.createPlayerAnims(this.player1.name, 'yane');
 
-    this.playerYane = this.physics.add.sprite(700, 400, 'yane');
-    this.playerYane.setCollideWorldBounds(true);
-    this.playerYane.setName('yane');
-    this.physics.add.collider(this.playerYane, platforms);
-    this.createPlayerAnims('yane');
+    this.player2 = this.physics.add.sprite(700, 400, 'jelko');
+    this.player2.setCollideWorldBounds(true);
+    this.player2.setName(PLAYER2);
+    this.physics.add.collider(this.player2, platforms);
+    this.createPlayerAnims(this.player2.name, 'jelko');
 
     this.cursors = this.input.keyboard.createCursorKeys();
     this.wsadKeys = this.input.keyboard.addKeys('W,S,A,D') as any;
@@ -104,43 +107,43 @@ class Game extends Phaser.Scene {
       setXY: { x: 12, y: 0, stepX: 70 },
     });
     this.physics.add.collider(this.stars, platforms);
-    this.physics.add.overlap(this.playerJelko, this.stars, this.collectStar, null, this);
-    this.physics.add.overlap(this.playerYane, this.stars, this.collectStar, null, this);
+    this.physics.add.overlap(this.player1, this.stars, this.collectStar, null, this);
+    this.physics.add.overlap(this.player2, this.stars, this.collectStar, null, this);
     this.stars.children.iterate((child: any) => child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8)));
 
-    this.bombsJelko = this.physics.add.group();
-    this.bombsYane = this.physics.add.group();
-    this.physics.add.collider(this.bombsJelko, platforms);
-    this.physics.add.collider(this.bombsYane, platforms);
-    this.physics.add.overlap(this.playerJelko, this.bombsYane, this.hitBomb, null, this);
-    this.physics.add.overlap(this.playerYane, this.bombsJelko, this.hitBomb, null, this);
+    this.bombs1 = this.physics.add.group();
+    this.bombs2 = this.physics.add.group();
+    this.physics.add.collider(this.bombs1, platforms);
+    this.physics.add.collider(this.bombs2, platforms);
+    this.physics.add.overlap(this.player1, this.bombs2, this.hitBomb, null, this);
+    this.physics.add.overlap(this.player2, this.bombs1, this.hitBomb, null, this);
 
-    this.scoreTextJelko = this.add.text(16, 16, 'Score: 0', {
-      fontSize: '32px',
-      color: '#ff9900',
-    });
-    this.scoreTextYane = this.add.text(600, 16, 'Score: 0', {
+    this.scoreText1 = this.add.text(16, 16, 'Score: 0', {
       fontSize: '32px',
       color: '#ff00a6',
     });
+    this.scoreText2 = this.add.text(600, 16, 'Score: 0', {
+      fontSize: '32px',
+      color: '#ff9900',
+    });
   }
 
-  private createPlayerAnims(spriteKey: string) {
+  private createPlayerAnims(playerName: string, spriteKey: string) {
     this.anims.create({
-      key: spriteKey + '_left',
+      key: playerName + '_left',
       frames: this.anims.generateFrameNumbers(spriteKey, { start: 0, end: 3 }),
       frameRate: 10,
       repeat: -1,
     });
 
     this.anims.create({
-      key: spriteKey + '_turn',
+      key: playerName + '_turn',
       frames: [{ key: spriteKey, frame: 4 }],
       frameRate: 20,
     });
 
     this.anims.create({
-      key: spriteKey + '_right',
+      key: playerName + '_right',
       frames: this.anims.generateFrameNumbers(spriteKey, { start: 5, end: 8 }),
       frameRate: 10,
       repeat: -1,
@@ -153,12 +156,12 @@ class Game extends Phaser.Scene {
       this.stars.children.iterate((child: any) => child.enableBody(true, child.x, 0, true, true));
     }
 
-    if (player.name === 'jelko') {
-      this.scoreJelko += 10;
-      this.scoreTextJelko.setText('Score: ' + this.scoreJelko);
+    if (player.name === PLAYER1) {
+      this.score1 += 10;
+      this.scoreText1.setText('Score: ' + this.score1);
     } else {
-      this.scoreYane += 10;
-      this.scoreTextYane.setText('Score: ' + this.scoreYane);
+      this.score2 += 10;
+      this.scoreText2.setText('Score: ' + this.score2);
     }
 
     this.throwBomb(player);
@@ -167,12 +170,12 @@ class Game extends Phaser.Scene {
 
   private throwBomb(player) {
     if (this.vsPlay) {
-      const bombs = player.name === 'jelko' ? this.bombsJelko : this.bombsYane;
-      const bomb = bombs.create(player.x, player.y, player.name === 'jelko' ? 'ball' : 'elephant');
+      const bombs = player.name === PLAYER1 ? this.bombs1 : this.bombs2;
+      const bomb = bombs.create(player.x, player.y, player.name === PLAYER1 ? 'elephant' : 'ball');
       bomb.setVelocity(this.randomPosNegVelocity(Phaser.Math.Between(0, 1) === 0, 50, 150), -300);
       bomb.setBounce(0.9);
     } else {
-      const bombs = player.name === 'jelko' ? this.bombsYane : this.bombsJelko;
+      const bombs = player.name === PLAYER1 ? this.bombs2 : this.bombs1;
       const deathFromAbove = player.x < WIDTH / 2 ? Phaser.Math.Between(WIDTH / 2, WIDTH) : Phaser.Math.Between(0, WIDTH / 2);
       const bomb = bombs.create(deathFromAbove, 16, Phaser.Math.Between(0, 1) ? 'elephant' : 'ball');
       bomb.setVelocity(this.randomPosNegVelocity(player.x > WIDTH / 2, 50, 150), 20);
@@ -192,21 +195,21 @@ class Game extends Phaser.Scene {
   }
 
   update() {
-    this.bombsJelko.children.iterate((child: any) => (child.rotation += 0.05));
-    this.bombsYane.children.iterate((child: any) => (child.rotation += 0.05));
+    this.bombs1.children.iterate((child: any) => (child.rotation += 0.05));
+    this.bombs2.children.iterate((child: any) => (child.rotation += 0.05));
 
     if (this.gameOver) {
       if (this.cursors.space.isDown) {
         location.reload();
       }
       if (this.configKeys.J.isDown) {
-        this.playerYane.disableBody(true, true);
-        this.scoreTextYane.destroy();
+        this.player1.disableBody(true, true);
+        this.scoreText1.destroy();
         this.gameOver = false;
       }
       if (this.configKeys.Y.isDown) {
-        this.playerJelko.disableBody(true, true);
-        this.scoreTextJelko.destroy();
+        this.player2.disableBody(true, true);
+        this.scoreText2.destroy();
         this.gameOver = false;
       }
       if (this.configKeys.V.isDown) {
@@ -216,19 +219,19 @@ class Game extends Phaser.Scene {
       return;
     }
 
-    this.bindPlayerKeys(this.playerYane, {
+    this.bindPlayerKeys(this.player2, {
       left: this.cursors.left,
       right: this.cursors.right,
       up: this.cursors.up,
     });
     if (this.vsPlay) {
-      this.bindPlayerKeys(this.playerJelko, {
+      this.bindPlayerKeys(this.player1, {
         left: this.wsadKeys.A,
         right: this.wsadKeys.D,
         up: this.wsadKeys.W,
       });
     } else {
-      this.bindPlayerKeys(this.playerJelko, {
+      this.bindPlayerKeys(this.player1, {
         left: this.cursors.left,
         right: this.cursors.right,
         up: this.cursors.up,
