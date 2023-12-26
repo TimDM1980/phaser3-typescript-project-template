@@ -38,8 +38,8 @@ class Game extends Phaser.Scene {
   private configKeys: {
     J: Phaser.Input.Keyboard.Key;
     Y: Phaser.Input.Keyboard.Key;
-    Q: Phaser.Input.Keyboard.Key;
-    A: Phaser.Input.Keyboard.Key;
+    V: Phaser.Input.Keyboard.Key;
+    B: Phaser.Input.Keyboard.Key;
   };
 
   preload() {
@@ -103,7 +103,7 @@ class Game extends Phaser.Scene {
     this.cursors = this.input.keyboard.createCursorKeys();
     this.wsadKeys = this.input.keyboard.addKeys('W,S,A,D') as any;
     this.zsqdKeys = this.input.keyboard.addKeys('Z,S,Q,D') as any;
-    this.configKeys = this.input.keyboard.addKeys('J,Y,Q,A') as any;
+    this.configKeys = this.input.keyboard.addKeys('J,Y,V,B') as any;
 
     this.stars = this.physics.add.group({
       key: 'star',
@@ -126,8 +126,8 @@ class Game extends Phaser.Scene {
     const instructions = [
       'Press J to play as Jelko (arrow keys)',
       'Press Y to play as Yane (arrow keys)',
-      'Press Q for 2 players on Qwerty keyboard (WSAD and arrow keys)',
-      'Press A for 2 players on Azerty keyboard (ZSQD and arrow keys)',
+      'Press V for VS play on Qwerty keyboard (WSAD and arrow keys)',
+      'Press B for VS play on Azerty keyboard (ZSQD and arrow keys)',
     ];
     this.instructionsText = this.add.text(WIDTH / 2, 16, instructions, {
       fontSize: '16px',
@@ -266,11 +266,11 @@ class Game extends Phaser.Scene {
         this.gameMode = 'YANE';
         this.restartGame();
       }
-      if (this.configKeys.Q.isDown) {
+      if (this.configKeys.V.isDown) {
         this.gameMode = 'VSQ';
         this.restartGame();
       }
-      if (this.configKeys.A.isDown) {
+      if (this.configKeys.B.isDown) {
         this.gameMode = 'VSA';
         this.restartGame();
       }
