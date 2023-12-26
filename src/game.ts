@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 
 // TODO
+// support AZERTY
 // refactor: remove duplication, extract classes, ...
 // groter veld / centreren / fullscreen / zoom afhankelijk van window size
 // scenes
@@ -15,17 +16,17 @@ const PLAYER2 = 'player2';
 class Game extends Phaser.Scene {
   private player1: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private scoreText1: Phaser.GameObjects.Text;
-  private score1 = 0;
+  private score1;
   private bombs1: Phaser.Physics.Arcade.Group;
 
   private player2: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private scoreText2: Phaser.GameObjects.Text;
-  private score2 = 0;
+  private score2;
   private bombs2: Phaser.Physics.Arcade.Group;
 
   private stars: Phaser.Physics.Arcade.Group;
-  private gameState: 'INITIAL' | 'PLAYING' | 'GAMEOVER' = 'INITIAL';
-  private vsPlay = false;
+  private gameState: 'GAMEOVER' | 'PLAYING';
+  private gameMode: 'JELKO' | 'YANE' | 'VS';
   private farts: (Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound)[] = [];
 
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -112,6 +113,7 @@ class Game extends Phaser.Scene {
     this.physics.add.overlap(this.player1, this.stars, this.collectStar, null, this);
     this.physics.add.overlap(this.player2, this.stars, this.collectStar, null, this);
     this.stars.children.iterate((child: any) => child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8)));
+    this.stars.children.iterate((child: any) => child.disableBody(true, true));
 
     this.bombs1 = this.physics.add.group();
     this.bombs2 = this.physics.add.group();
@@ -120,16 +122,44 @@ class Game extends Phaser.Scene {
     this.physics.add.overlap(this.player1, this.bombs2, this.hitBomb, null, this);
     this.physics.add.overlap(this.player2, this.bombs1, this.hitBomb, null, this);
 
+    this.gameState = 'GAMEOVER';
+  }
+
+  private restartGame() {
+    this.player1.enableBody(true, 100, HEIGHT - 32 - 24, true, true);
+    this.player2.enableBody(true, 700, HEIGHT - 32 - 24, true, true);
+    this.player1.clearTint();
+    this.player2.clearTint();
+    if (this.gameMode === 'YANE') {
+      this.player2.disableBody(true, true);
+    }
+    if (this.gameMode === 'JELKO') {
+      this.player1.disableBody(true, true);
+    }
+
+    this.stars.children.iterate((child: any) => child.enableBody(true, child.x, 0, true, true));
+    this.bombs1.clear(true, true);
+    this.bombs2.clear(true, true);
+
     this.score1 = 0;
     this.score2 = 0;
-    this.scoreText1 = this.add.text(16, 16, 'Score: 0', {
-      fontSize: '32px',
-      color: '#ff00a6',
-    });
-    this.scoreText2 = this.add.text(600, 16, 'Score: 0', {
-      fontSize: '32px',
-      color: '#ff9900',
-    });
+    this.scoreText1?.destroy();
+    this.scoreText2?.destroy();
+    if (['YANE', 'VS'].includes(this.gameMode)) {
+      this.scoreText1 = this.add.text(16, 16, 'Score: 0', {
+        fontSize: '32px',
+        color: '#ff00a6',
+      });
+    }
+    if (['JELKO', 'VS'].includes(this.gameMode)) {
+      this.scoreText2 = this.add.text(600, 16, 'Score: 0', {
+        fontSize: '32px',
+        color: '#ff9900',
+      });
+    }
+
+    this.gameState = 'PLAYING';
+    this.physics.resume();
   }
 
   private createPlayerAnims(playerName: string, spriteKey: string) {
@@ -177,7 +207,7 @@ class Game extends Phaser.Scene {
   }
 
   private throwBomb(player) {
-    if (this.vsPlay) {
+    if (this.gameMode === 'VS') {
       const bombs = player.name === PLAYER1 ? this.bombs1 : this.bombs2;
       const bomb = bombs.create(player.x, player.y, player.name === PLAYER1 ? 'elephant' : 'ball');
       bomb.setVelocity(this.randomPosNegVelocity(Phaser.Math.Between(0, 1) === 0, 50, 150), -300);
@@ -211,36 +241,26 @@ class Game extends Phaser.Scene {
   }
 
   update() {
+    if (this.gameState === 'GAMEOVER') {
+      if (this.configKeys.J.isDown) {
+        this.gameMode = 'JELKO';
+        this.restartGame();
+      }
+      if (this.configKeys.Y.isDown) {
+        this.gameMode = 'YANE';
+        this.restartGame();
+      }
+      if (this.configKeys.V.isDown) {
+        this.gameMode = 'VS';
+        this.restartGame();
+      }
+      return;
+    }
+
     this.bombs1.children.iterate((child: any) => (child.rotation += 0.05));
     this.bombs2.children.iterate((child: any) => (child.rotation += 0.05));
 
-    if (this.gameState === 'GAMEOVER') {
-      if (this.cursors.space.isDown) {
-        this.gameState = 'INITIAL';
-        this.scene.restart();
-      }
-      return;
-    }
-
-    if (this.gameState === 'INITIAL') {
-      if (this.configKeys.J.isDown) {
-        this.player1.disableBody(true, true);
-        this.scoreText1.destroy();
-        this.gameState = 'PLAYING';
-      }
-      if (this.configKeys.Y.isDown) {
-        this.player2.disableBody(true, true);
-        this.scoreText2.destroy();
-        this.gameState = 'PLAYING';
-      }
-      if (this.configKeys.V.isDown) {
-        this.vsPlay = true;
-        this.gameState = 'PLAYING';
-      }
-      return;
-    }
-
-    if (this.vsPlay) {
+    if (this.gameMode === 'VS') {
       this.bindPlayerKeys(this.player1, {
         left: this.wsadKeys.A,
         right: this.wsadKeys.D,
