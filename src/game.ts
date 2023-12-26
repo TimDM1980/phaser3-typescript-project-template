@@ -1,9 +1,5 @@
 import * as Phaser from 'phaser';
 
-// TODO
-// refactor: remove duplication, extract classes, ...
-// groter veld / centreren / fullscreen / zoom afhankelijk van window size
-
 const WIDTH = 800;
 const HEIGHT = 600;
 const PLAYER1 = 'player1';
@@ -282,7 +278,7 @@ class Game extends Phaser.Scene {
     }
 
     this.bombs1.children.iterate((child: any) => (child.rotation += 0.05));
-    this.bombs2.children.iterate((child: any) => (child.rotation += 0.05));
+    this.bombs2.children.iterate((child: any) => (child.rotation += -0.05));
 
     if (this.gameMode === 'VSQ') {
       this.bindPlayerKeys(this.player1, {
@@ -347,7 +343,10 @@ const config = {
   type: Phaser.AUTO,
   width: WIDTH,
   height: HEIGHT,
-  zoom: 1.5,
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+  },
   scene: Game,
   physics: {
     default: 'arcade',
