@@ -1,7 +1,6 @@
 import * as Phaser from 'phaser';
 
 // TODO
-// support AZERTY
 // refactor: remove duplication, extract classes, ...
 // groter veld / centreren / fullscreen / zoom afhankelijk van window size
 
@@ -23,7 +22,7 @@ class Game extends Phaser.Scene {
 
   private stars: Phaser.Physics.Arcade.Group;
   private gameState: 'GAMEOVER' | 'PLAYING';
-  private gameMode: 'JELKO' | 'YANE' | 'VS';
+  private gameMode: 'JELKO' | 'YANE' | 'VSQ' | 'VSA';
   private instructionsText: Phaser.GameObjects.Text;
   private farts: (Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound)[] = [];
 
@@ -34,10 +33,17 @@ class Game extends Phaser.Scene {
     A: Phaser.Input.Keyboard.Key;
     D: Phaser.Input.Keyboard.Key;
   };
+  private zsqdKeys: {
+    Z: Phaser.Input.Keyboard.Key;
+    S: Phaser.Input.Keyboard.Key;
+    Q: Phaser.Input.Keyboard.Key;
+    D: Phaser.Input.Keyboard.Key;
+  };
   private configKeys: {
     J: Phaser.Input.Keyboard.Key;
     Y: Phaser.Input.Keyboard.Key;
-    V: Phaser.Input.Keyboard.Key;
+    Q: Phaser.Input.Keyboard.Key;
+    A: Phaser.Input.Keyboard.Key;
   };
 
   preload() {
@@ -100,7 +106,8 @@ class Game extends Phaser.Scene {
 
     this.cursors = this.input.keyboard.createCursorKeys();
     this.wsadKeys = this.input.keyboard.addKeys('W,S,A,D') as any;
-    this.configKeys = this.input.keyboard.addKeys('J,Y,V') as any;
+    this.zsqdKeys = this.input.keyboard.addKeys('Z,S,Q,D') as any;
+    this.configKeys = this.input.keyboard.addKeys('J,Y,Q,A') as any;
 
     this.stars = this.physics.add.group({
       key: 'star',
@@ -120,7 +127,12 @@ class Game extends Phaser.Scene {
     this.physics.add.overlap(this.player1, this.bombs2, this.hitBomb, null, this);
     this.physics.add.overlap(this.player2, this.bombs1, this.hitBomb, null, this);
 
-    const instructions = ['Press J to play as Jelko', 'Press Y to play as Yane', 'Press V for VS play'];
+    const instructions = [
+      'Press J to play as Jelko (arrow keys)',
+      'Press Y to play as Yane (arrow keys)',
+      'Press Q for 2 players on Qwerty keyboard (WSAD and arrow keys)',
+      'Press A for 2 players on Azerty keyboard (ZSQD and arrow keys)',
+    ];
     this.instructionsText = this.add.text(WIDTH / 2, 16, instructions, {
       fontSize: '16px',
       color: '#000000',
@@ -151,13 +163,13 @@ class Game extends Phaser.Scene {
     this.score2 = 0;
     this.scoreText1?.destroy();
     this.scoreText2?.destroy();
-    if (['YANE', 'VS'].includes(this.gameMode)) {
+    if (['YANE', 'VSA', 'VSQ'].includes(this.gameMode)) {
       this.scoreText1 = this.add.text(16, 16, 'Score: 0', {
         fontSize: '32px',
         color: '#ff00a6',
       });
     }
-    if (['JELKO', 'VS'].includes(this.gameMode)) {
+    if (['JELKO', 'VSA', 'VSQ'].includes(this.gameMode)) {
       this.scoreText2 = this.add.text(600, 16, 'Score: 0', {
         fontSize: '32px',
         color: '#ff9900',
@@ -214,7 +226,7 @@ class Game extends Phaser.Scene {
   }
 
   private throwBomb(player) {
-    if (this.gameMode === 'VS') {
+    if (this.gameMode.includes('VS')) {
       const bombs = player.name === PLAYER1 ? this.bombs1 : this.bombs2;
       const bomb = bombs.create(player.x, player.y, player.name === PLAYER1 ? 'elephant' : 'ball');
       bomb.setVelocity(this.randomPosNegVelocity(Phaser.Math.Between(0, 1) === 0, 50, 150), -300);
@@ -258,8 +270,12 @@ class Game extends Phaser.Scene {
         this.gameMode = 'YANE';
         this.restartGame();
       }
-      if (this.configKeys.V.isDown) {
-        this.gameMode = 'VS';
+      if (this.configKeys.Q.isDown) {
+        this.gameMode = 'VSQ';
+        this.restartGame();
+      }
+      if (this.configKeys.A.isDown) {
+        this.gameMode = 'VSA';
         this.restartGame();
       }
       return;
@@ -268,12 +284,19 @@ class Game extends Phaser.Scene {
     this.bombs1.children.iterate((child: any) => (child.rotation += 0.05));
     this.bombs2.children.iterate((child: any) => (child.rotation += 0.05));
 
-    if (this.gameMode === 'VS') {
+    if (this.gameMode === 'VSQ') {
       this.bindPlayerKeys(this.player1, {
         left: this.wsadKeys.A,
         right: this.wsadKeys.D,
         up: this.wsadKeys.W,
         down: this.wsadKeys.S,
+      });
+    } else if (this.gameMode === 'VSA') {
+      this.bindPlayerKeys(this.player1, {
+        left: this.zsqdKeys.Q,
+        right: this.zsqdKeys.D,
+        up: this.zsqdKeys.Z,
+        down: this.zsqdKeys.S,
       });
     } else {
       this.bindPlayerKeys(this.player1, {
