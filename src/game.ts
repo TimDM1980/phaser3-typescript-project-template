@@ -4,9 +4,6 @@ import * as Phaser from 'phaser';
 // support AZERTY
 // refactor: remove duplication, extract classes, ...
 // groter veld / centreren / fullscreen / zoom afhankelijk van window size
-// scenes
-//  beginscherm met legende en keys en press J/Y/V to start
-//  game-over scherm met winnaar en press space to play again
 
 const WIDTH = 800;
 const HEIGHT = 600;
@@ -16,17 +13,18 @@ const PLAYER2 = 'player2';
 class Game extends Phaser.Scene {
   private player1: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private scoreText1: Phaser.GameObjects.Text;
-  private score1;
+  private score1: number;
   private bombs1: Phaser.Physics.Arcade.Group;
 
   private player2: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private scoreText2: Phaser.GameObjects.Text;
-  private score2;
+  private score2: number;
   private bombs2: Phaser.Physics.Arcade.Group;
 
   private stars: Phaser.Physics.Arcade.Group;
   private gameState: 'GAMEOVER' | 'PLAYING';
   private gameMode: 'JELKO' | 'YANE' | 'VS';
+  private instructionsText: Phaser.GameObjects.Text;
   private farts: (Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound)[] = [];
 
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -122,6 +120,14 @@ class Game extends Phaser.Scene {
     this.physics.add.overlap(this.player1, this.bombs2, this.hitBomb, null, this);
     this.physics.add.overlap(this.player2, this.bombs1, this.hitBomb, null, this);
 
+    const instructions = ['Press J to play as Jelko', 'Press Y to play as Yane', 'Press V for VS play'];
+    this.instructionsText = this.add.text(WIDTH / 2, 16, instructions, {
+      fontSize: '16px',
+      color: '#000000',
+      align: 'center',
+    });
+    this.instructionsText.setOrigin(0.5, 0);
+
     this.gameState = 'GAMEOVER';
   }
 
@@ -159,6 +165,7 @@ class Game extends Phaser.Scene {
     }
 
     this.gameState = 'PLAYING';
+    this.instructionsText.setVisible(false);
     this.physics.resume();
   }
 
@@ -233,13 +240,14 @@ class Game extends Phaser.Scene {
     return posNegCondition ? Phaser.Math.Between(randomMin, randomMax) : Phaser.Math.Between(-randomMax, -randomMin);
   }
 
-  private hitBomb(player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody, bomb) {
-    this.physics.pause();
+  private hitBomb(player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody) {
     player.setTint(0xff0000);
     player.anims.play(player.name + '_turn');
-    this.gameState = 'GAMEOVER';
-  }
 
+    this.gameState = 'GAMEOVER';
+    this.instructionsText.setVisible(true);
+    this.physics.pause();
+  }
   update() {
     if (this.gameState === 'GAMEOVER') {
       if (this.configKeys.J.isDown) {
