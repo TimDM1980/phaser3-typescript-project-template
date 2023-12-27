@@ -18,7 +18,7 @@ class Game extends Phaser.Scene {
 
   private stars: Phaser.Physics.Arcade.Group;
   private gameState: 'GAMEOVER' | 'PLAYING';
-  private gameMode: 'JELKO' | 'YANE' | 'VSQ' | 'VSA' | 'TOUCH';
+  private gameMode: 'JELKO' | 'YANE' | 'VSQ' | 'VSA' | 'TOUCHJ' | 'TOUCHY';
   private instructionsText: Phaser.GameObjects.Text;
   private farts: (Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound)[] = [];
 
@@ -40,7 +40,6 @@ class Game extends Phaser.Scene {
     Y: Phaser.Input.Keyboard.Key;
     V: Phaser.Input.Keyboard.Key;
     B: Phaser.Input.Keyboard.Key;
-    T: Phaser.Input.Keyboard.Key;
   };
   private buttons: Phaser.GameObjects.Group;
   private buttonUp: Phaser.GameObjects.Image;
@@ -114,7 +113,7 @@ class Game extends Phaser.Scene {
     this.cursors = this.input.keyboard.createCursorKeys();
     this.wsadKeys = this.input.keyboard.addKeys('W,S,A,D') as any;
     this.zsqdKeys = this.input.keyboard.addKeys('Z,S,Q,D') as any;
-    this.configKeys = this.input.keyboard.addKeys('J,Y,V,B,T') as any;
+    this.configKeys = this.input.keyboard.addKeys('J,Y,V,B') as any;
 
     this.buttons = this.add.group();
     this.buttonUp = this.buttons.create(64, HEIGHT - 96, 'up');
@@ -146,7 +145,8 @@ class Game extends Phaser.Scene {
       'Press Y to play as Yane (arrow keys)',
       'Press V for VS play on Qwerty keyboard (WSAD and arrow keys)',
       'Press B for VS play on Azerty keyboard (ZSQD and arrow keys)',
-      'Press T for touch play (single player as Jelko)',
+      'Tap Jelko to play as Jelko (touch)',
+      'Tap Yane to play as Yane (touch)',
     ];
     this.instructionsText = this.add.text(WIDTH / 2, 16, instructions, {
       fontSize: '12px',
@@ -163,10 +163,10 @@ class Game extends Phaser.Scene {
     this.player2.enableBody(true, 700, HEIGHT - 32 - 24, true, true);
     this.player1.clearTint();
     this.player2.clearTint();
-    if (this.gameMode === 'YANE') {
+    if (this.gameMode === 'YANE' || this.gameMode === 'TOUCHY') {
       this.player2.disableBody(true, true);
     }
-    if (this.gameMode === 'JELKO' || this.gameMode === 'TOUCH') {
+    if (this.gameMode === 'JELKO' || this.gameMode === 'TOUCHJ') {
       this.player1.disableBody(true, true);
     }
 
@@ -178,20 +178,20 @@ class Game extends Phaser.Scene {
     this.score2 = 0;
     this.scoreText1?.destroy();
     this.scoreText2?.destroy();
-    if (['YANE', 'VSA', 'VSQ'].includes(this.gameMode)) {
+    if (['YANE', 'VSA', 'VSQ', 'TOUCHY'].includes(this.gameMode)) {
       this.scoreText1 = this.add.text(16, 16, 'Score: 0', {
         fontSize: '32px',
         color: '#ff00a6',
       });
     }
-    if (['JELKO', 'VSA', 'VSQ', 'TOUCH'].includes(this.gameMode)) {
+    if (['JELKO', 'VSA', 'VSQ', 'TOUCHJ'].includes(this.gameMode)) {
       this.scoreText2 = this.add.text(600, 16, 'Score: 0', {
         fontSize: '32px',
         color: '#ff9900',
       });
     }
 
-    if (this.gameMode === 'TOUCH') {
+    if (this.gameMode.includes('TOUCH')) {
       this.buttons.setVisible(true);
     } else {
       this.buttons.setVisible(false);
@@ -299,9 +299,15 @@ class Game extends Phaser.Scene {
         this.gameMode = 'VSA';
         this.restartGame();
       }
-      if (this.configKeys.T.isDown) {
-        this.gameMode = 'TOUCH';
-        this.restartGame();
+      if (this.input.activePointer.isDown) {
+        if (this.player1.getBounds().contains(this.input.activePointer.downX, this.input.activePointer.downY)) {
+          this.gameMode = 'TOUCHY';
+          this.restartGame();
+        }
+        if (this.player2.getBounds().contains(this.input.activePointer.downX, this.input.activePointer.downY)) {
+          this.gameMode = 'TOUCHJ';
+          this.restartGame();
+        }
       }
       return;
     }
@@ -332,7 +338,9 @@ class Game extends Phaser.Scene {
       });
     }
 
-    if (this.gameMode === 'TOUCH') {
+    if (this.gameMode === 'TOUCHY') {
+      this.bindPlayerTouch(this.player1);
+    } else if (this.gameMode === 'TOUCHJ') {
       this.bindPlayerTouch(this.player2);
     } else {
       this.bindPlayerKeys(this.player2, {
