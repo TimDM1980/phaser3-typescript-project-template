@@ -18,7 +18,7 @@ class Game extends Phaser.Scene {
 
   private stars: Phaser.Physics.Arcade.Group;
   private gameState: 'GAMEOVER' | 'PLAYING';
-  private gameMode: 'JELKO' | 'YANE' | 'VSQ' | 'VSA';
+  private gameMode: 'JELKO' | 'YANE' | 'VSQ' | 'VSA' | 'TOUCH';
   private instructionsText: Phaser.GameObjects.Text;
   private farts: (Phaser.Sound.NoAudioSound | Phaser.Sound.HTML5AudioSound | Phaser.Sound.WebAudioSound)[] = [];
 
@@ -40,7 +40,13 @@ class Game extends Phaser.Scene {
     Y: Phaser.Input.Keyboard.Key;
     V: Phaser.Input.Keyboard.Key;
     B: Phaser.Input.Keyboard.Key;
+    T: Phaser.Input.Keyboard.Key;
   };
+  private buttons: Phaser.GameObjects.Group;
+  private buttonUp: Phaser.GameObjects.Image;
+  private buttonDown: Phaser.GameObjects.Image;
+  private buttonLeft: Phaser.GameObjects.Image;
+  private buttonRight: Phaser.GameObjects.Image;
 
   preload() {
     this.load.image('sky', 'assets/sky.png');
@@ -48,6 +54,11 @@ class Game extends Phaser.Scene {
     this.load.image('star', 'assets/star.png');
     this.load.image('ball', 'assets/ball.png');
     this.load.image('elephant', 'assets/elephant.png');
+
+    this.load.image('up', 'assets/up.png');
+    this.load.image('down', 'assets/down.png');
+    this.load.image('left', 'assets/left.png');
+    this.load.image('right', 'assets/right.png');
 
     this.load.spritesheet('jelko', 'assets/jelko.png', {
       frameWidth: 32,
@@ -103,7 +114,14 @@ class Game extends Phaser.Scene {
     this.cursors = this.input.keyboard.createCursorKeys();
     this.wsadKeys = this.input.keyboard.addKeys('W,S,A,D') as any;
     this.zsqdKeys = this.input.keyboard.addKeys('Z,S,Q,D') as any;
-    this.configKeys = this.input.keyboard.addKeys('J,Y,V,B') as any;
+    this.configKeys = this.input.keyboard.addKeys('J,Y,V,B,T') as any;
+
+    this.buttons = this.add.group();
+    this.buttonUp = this.buttons.create(64, HEIGHT - 96, 'up');
+    this.buttonDown = this.buttons.create(64, HEIGHT - 32, 'down');
+    this.buttonLeft = this.buttons.create(32, HEIGHT - 64, 'left');
+    this.buttonRight = this.buttons.create(96, HEIGHT - 64, 'right');
+    this.buttons.setVisible(false);
 
     this.stars = this.physics.add.group({
       key: 'star',
@@ -128,9 +146,10 @@ class Game extends Phaser.Scene {
       'Press Y to play as Yane (arrow keys)',
       'Press V for VS play on Qwerty keyboard (WSAD and arrow keys)',
       'Press B for VS play on Azerty keyboard (ZSQD and arrow keys)',
+      'Press T for touch play (single player as Jelko)',
     ];
     this.instructionsText = this.add.text(WIDTH / 2, 16, instructions, {
-      fontSize: '16px',
+      fontSize: '12px',
       color: '#000000',
       align: 'center',
     });
@@ -147,7 +166,7 @@ class Game extends Phaser.Scene {
     if (this.gameMode === 'YANE') {
       this.player2.disableBody(true, true);
     }
-    if (this.gameMode === 'JELKO') {
+    if (this.gameMode === 'JELKO' || this.gameMode === 'TOUCH') {
       this.player1.disableBody(true, true);
     }
 
@@ -165,11 +184,17 @@ class Game extends Phaser.Scene {
         color: '#ff00a6',
       });
     }
-    if (['JELKO', 'VSA', 'VSQ'].includes(this.gameMode)) {
+    if (['JELKO', 'VSA', 'VSQ', 'TOUCH'].includes(this.gameMode)) {
       this.scoreText2 = this.add.text(600, 16, 'Score: 0', {
         fontSize: '32px',
         color: '#ff9900',
       });
+    }
+
+    if (this.gameMode === 'TOUCH') {
+      this.buttons.setVisible(true);
+    } else {
+      this.buttons.setVisible(false);
     }
 
     this.gameState = 'PLAYING';
@@ -274,6 +299,10 @@ class Game extends Phaser.Scene {
         this.gameMode = 'VSA';
         this.restartGame();
       }
+      if (this.configKeys.T.isDown) {
+        this.gameMode = 'TOUCH';
+        this.restartGame();
+      }
       return;
     }
 
@@ -294,7 +323,7 @@ class Game extends Phaser.Scene {
         up: this.zsqdKeys.Z,
         down: this.zsqdKeys.S,
       });
-    } else {
+    } else if (this.gameMode === 'YANE') {
       this.bindPlayerKeys(this.player1, {
         left: this.cursors.left,
         right: this.cursors.right,
@@ -302,12 +331,17 @@ class Game extends Phaser.Scene {
         down: this.cursors.down,
       });
     }
-    this.bindPlayerKeys(this.player2, {
-      left: this.cursors.left,
-      right: this.cursors.right,
-      up: this.cursors.up,
-      down: this.cursors.down,
-    });
+
+    if (this.gameMode === 'TOUCH') {
+      this.bindPlayerTouch(this.player2);
+    } else {
+      this.bindPlayerKeys(this.player2, {
+        left: this.cursors.left,
+        right: this.cursors.right,
+        up: this.cursors.up,
+        down: this.cursors.down,
+      });
+    }
   }
 
   private bindPlayerKeys(
@@ -335,6 +369,28 @@ class Game extends Phaser.Scene {
     }
     if (keys.down.isDown && !player.body.touching.down) {
       player.setVelocityY(600);
+    }
+  }
+
+  private bindPlayerTouch(player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody) {
+    if (this.input.activePointer.isDown) {
+      if (this.buttonLeft.getBounds().contains(this.input.activePointer.downX, this.input.activePointer.downY)) {
+        player.setVelocityX(-160);
+        player.anims.play(player.name + '_left', true);
+      } else if (this.buttonRight.getBounds().contains(this.input.activePointer.downX, this.input.activePointer.downY)) {
+        player.setVelocityX(160);
+        player.anims.play(player.name + '_right', true);
+      }
+
+      if (this.buttonUp.getBounds().contains(this.input.activePointer.downX, this.input.activePointer.downY) && player.body.touching.down) {
+        player.setVelocityY(-330);
+      }
+      if (this.buttonDown.getBounds().contains(this.input.activePointer.downX, this.input.activePointer.downY) && !player.body.touching.down) {
+        player.setVelocityY(600);
+      }
+    } else {
+      player.setVelocityX(0);
+      player.anims.play(player.name + '_turn');
     }
   }
 }
