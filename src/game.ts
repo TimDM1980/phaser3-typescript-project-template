@@ -116,10 +116,10 @@ class Game extends Phaser.Scene {
     this.configKeys = this.input.keyboard.addKeys('J,Y,V,B') as any;
 
     this.buttons = this.add.group();
-    this.buttonUp = this.buttons.create(64, HEIGHT - 96, 'up');
-    this.buttonDown = this.buttons.create(64, HEIGHT - 32, 'down');
-    this.buttonLeft = this.buttons.create(32, HEIGHT - 64, 'left');
-    this.buttonRight = this.buttons.create(96, HEIGHT - 64, 'right');
+    this.buttonUp = this.buttons.create(112, HEIGHT - 208, 'up');
+    this.buttonDown = this.buttons.create(112, HEIGHT - 112, 'down');
+    this.buttonLeft = this.buttons.create(48, HEIGHT - 160, 'left');
+    this.buttonRight = this.buttons.create(172, HEIGHT - 160, 'right');
     this.buttons.setVisible(false);
 
     this.stars = this.physics.add.group({
@@ -145,8 +145,8 @@ class Game extends Phaser.Scene {
       'Press Y to play as Yane (arrow keys)',
       'Press V for VS play on Qwerty keyboard (WSAD and arrow keys)',
       'Press B for VS play on Azerty keyboard (ZSQD and arrow keys)',
-      'Tap Jelko to play as Jelko (touch)',
-      'Tap Yane to play as Yane (touch)',
+      'Tap Jelko to play as Jelko (touch screen)',
+      'Tap Yane to play as Yane (touch screen)',
     ];
     this.instructionsText = this.add.text(WIDTH / 2, 16, instructions, {
       fontSize: '12px',
@@ -254,8 +254,9 @@ class Game extends Phaser.Scene {
       bomb.setBounce(0.9);
     } else {
       const bombs = player.name === PLAYER1 ? this.bombs2 : this.bombs1;
-      const bomb = bombs.create(this.calculateBombSpawnXForSinglePlayer(player), 16, Phaser.Math.Between(0, 1) ? 'elephant' : 'ball');
-      bomb.setVelocity(this.randomPosNegVelocity(player.x > WIDTH / 2, 50, 150), 20);
+      const bombSpawnX = this.calculateBombSpawnXForSinglePlayer(player);
+      const bomb = bombs.create(bombSpawnX, 16, Phaser.Math.Between(0, 1) ? 'elephant' : 'ball');
+      bomb.setVelocity(this.randomPosNegVelocity(bombSpawnX < WIDTH / 2, 50, 150), 20);
       bomb.setBounce(0.9);
     }
   }
@@ -279,6 +280,14 @@ class Game extends Phaser.Scene {
 
     this.gameState = 'GAMEOVER';
     this.instructionsText.setVisible(true);
+
+    if (this.gameMode === 'YANE' || this.gameMode === 'TOUCHY') {
+      this.player2.enableBody(true, 700, HEIGHT - 32 - 24, true, true);
+    }
+    if (this.gameMode === 'JELKO' || this.gameMode === 'TOUCHJ') {
+      this.player1.enableBody(true, 100, HEIGHT - 32 - 24, true, true);
+    }
+
     this.physics.pause();
   }
   update() {
