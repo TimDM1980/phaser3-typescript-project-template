@@ -4,18 +4,23 @@ const WIDTH = 800;
 const HEIGHT = 600;
 const PLAYER1 = 'player1';
 const PLAYER2 = 'player2';
-
-// highscore, lives, score object
+const TINTS = {
+  2: 0x00ff00,
+  1: 0xffa500,
+  0: 0xff0000,
+};
 
 class Game extends Phaser.Scene {
   private player1: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private scoreText1: Phaser.GameObjects.Text;
   private score1: number;
+  private lives1: number;
   private bombs1: Phaser.Physics.Arcade.Group;
 
   private player2: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private scoreText2: Phaser.GameObjects.Text;
   private score2: number;
+  private lives2: number;
   private bombs2: Phaser.Physics.Arcade.Group;
 
   private highscore: {
@@ -208,11 +213,11 @@ class Game extends Phaser.Scene {
 
     if (player.name === PLAYER1) {
       this.score1 += 10;
-      this.scoreText1.setText('Score: ' + this.score1);
+      this.scoreText1.setText([`Score: ${this.score1}`, `Lives: ${this.lives1}`]);
       this.updateHighscore(this.score1);
     } else {
       this.score2 += 10;
-      this.scoreText2.setText('Score: ' + this.score2);
+      this.scoreText2.setText([`Score: ${this.score2}`, `Lives: ${this.lives2}`]);
       this.updateHighscore(this.score2);
     }
 
@@ -260,10 +265,25 @@ class Game extends Phaser.Scene {
     return posNegCondition ? Phaser.Math.Between(randomMin, randomMax) : Phaser.Math.Between(-randomMax, -randomMin);
   }
 
-  private hitBomb(player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody) {
-    player.setTint(0xff0000);
-    player.anims.play(player.name + '_turn');
+  private hitBomb(player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody, bomb: Phaser.Types.Physics.Arcade.GameObjectWithBody) {
+    let livesLeft: number;
+    if (player.name === PLAYER1) {
+      this.lives1 += -1;
+      this.scoreText1.setText([`Score: ${this.score1}`, `Lives: ${this.lives1}`]);
+      livesLeft = this.lives1;
+    } else {
+      this.lives2 += -1;
+      this.scoreText2.setText([`Score: ${this.score2}`, `Lives: ${this.lives2}`]);
+      livesLeft = this.lives2;
+    }
+    player.setTint(TINTS[livesLeft]);
 
+    if (livesLeft > 0) {
+      bomb.destroy();
+      return;
+    }
+
+    player.anims.play(player.name + '_turn');
     this.gameState = 'GAMEOVER';
     this.instructionsText.setVisible(true);
 
@@ -370,18 +390,20 @@ class Game extends Phaser.Scene {
 
     this.score1 = 0;
     this.score2 = 0;
+    this.lives1 = 3;
+    this.lives2 = 3;
     this.scoreText1?.destroy();
     this.scoreText2?.destroy();
     if (['YANE', 'VSA', 'VSQ', 'TOUCHY'].includes(this.gameMode)) {
-      this.scoreText1 = this.add.text(16, 16, 'Score: 0', {
+      this.scoreText1 = this.add.text(16, 16, [`Score: ${this.score1}`, `Lives: ${this.lives1}`], {
         fontSize: '32px',
-        color: '#ff00a6',
+        color: '#ffc0cb',
       });
     }
     if (['JELKO', 'VSA', 'VSQ', 'TOUCHJ'].includes(this.gameMode)) {
-      this.scoreText2 = this.add.text(600, 16, 'Score: 0', {
+      this.scoreText2 = this.add.text(600, 16, [`Score: ${this.score2}`, `Lives: ${this.lives2}`], {
         fontSize: '32px',
-        color: '#ff9900',
+        color: '#ffa500',
       });
     }
 
