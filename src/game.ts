@@ -18,6 +18,11 @@ class Game extends Phaser.Scene {
   private score2: number;
   private bombs2: Phaser.Physics.Arcade.Group;
 
+  private highscore: {
+    value: number;
+    text: Phaser.GameObjects.Text;
+  };
+
   private stars: Phaser.Physics.Arcade.Group;
   private gameState: 'GAMEOVER' | 'PLAYING';
   private gameMode: 'JELKO' | 'YANE' | 'VSQ' | 'VSA' | 'TOUCHJ' | 'TOUCHY';
@@ -42,6 +47,7 @@ class Game extends Phaser.Scene {
     Y: Phaser.Input.Keyboard.Key;
     V: Phaser.Input.Keyboard.Key;
     B: Phaser.Input.Keyboard.Key;
+    H: Phaser.Input.Keyboard.Key;
   };
   private buttons: Phaser.GameObjects.Group;
   private buttonUp: Phaser.GameObjects.Image;
@@ -113,7 +119,7 @@ class Game extends Phaser.Scene {
     this.cursors = this.input.keyboard.createCursorKeys();
     this.wsadKeys = this.input.keyboard.addKeys('W,S,A,D') as any;
     this.zsqdKeys = this.input.keyboard.addKeys('Z,S,Q,D') as any;
-    this.configKeys = this.input.keyboard.addKeys('J,Y,V,B') as any;
+    this.configKeys = this.input.keyboard.addKeys('J,Y,V,B,H') as any;
 
     this.buttons = this.add.group();
     this.buttonUp = this.buttons.create(112, HEIGHT - 208, 'up');
@@ -140,20 +146,34 @@ class Game extends Phaser.Scene {
     this.physics.add.overlap(this.player1, this.bombs2, this.hitBomb, null, this);
     this.physics.add.overlap(this.player2, this.bombs1, this.hitBomb, null, this);
 
+    const localHighScore = parseInt(localStorage.getItem('highscore')) || 0;
+    this.highscore = {
+      value: localHighScore,
+      text: this.add
+        .text(WIDTH / 2, 16, `Highscore: ${localHighScore}`, {
+          fontSize: '24px',
+          color: '#000000',
+        })
+        .setOrigin(0.5, 0),
+    };
+
     const instructions = [
       'Press J to play as Jelko (arrow keys)',
       'Press Y to play as Yane (arrow keys)',
-      'Press V for VS play on Qwerty keyboard (WSAD and arrow keys)',
-      'Press B for VS play on Azerty keyboard (ZSQD and arrow keys)',
       'Tap Jelko to play as Jelko (touch screen)',
       'Tap Yane to play as Yane (touch screen)',
+      'Press V for VS play on Qwerty keyboard (WSAD and arrow keys)',
+      'Press B for VS play on Azerty keyboard (ZSQD and arrow keys)',
+      'Press H to reset highscore',
     ];
-    this.instructionsText = this.add.text(WIDTH / 2, 16, instructions, {
-      fontSize: '12px',
-      color: '#000000',
-      align: 'center',
-    });
-    this.instructionsText.setOrigin(0.5, 0);
+    this.instructionsText = this.add
+      .text(WIDTH / 2, 64, instructions, {
+        fontSize: '16px',
+        color: '#000000',
+        backgroundColor: '#ffffff',
+        align: 'center',
+      })
+      .setOrigin(0.5, 0);
 
     this.gameState = 'GAMEOVER';
   }
@@ -189,9 +209,11 @@ class Game extends Phaser.Scene {
     if (player.name === PLAYER1) {
       this.score1 += 10;
       this.scoreText1.setText('Score: ' + this.score1);
+      this.updateHighscore(this.score1);
     } else {
       this.score2 += 10;
       this.scoreText2.setText('Score: ' + this.score2);
+      this.updateHighscore(this.score2);
     }
 
     const numberOfBombsToThrow = Math.ceil((this.score1 + this.score2) / 120);
@@ -200,6 +222,14 @@ class Game extends Phaser.Scene {
     }
 
     this.farts[Phaser.Math.Between(0, 2)].play();
+  }
+
+  private updateHighscore(score: number) {
+    if (score > this.highscore.value) {
+      localStorage.setItem('highscore', score.toString());
+      this.highscore.value = score;
+      this.highscore.text.setText(`Highscore: ${score}`);
+    }
   }
 
   private throwBomb(player) {
@@ -273,6 +303,11 @@ class Game extends Phaser.Scene {
           this.gameMode = 'TOUCHJ';
           this.restartGame();
         }
+      }
+      if (this.configKeys.H.isDown) {
+        localStorage.removeItem('highscore');
+        this.highscore.value = 0;
+        this.highscore.text.setText(`Highscore: ${this.highscore.value}`);
       }
       return;
     }
