@@ -20,6 +20,9 @@ const TINTS = {
 };
 
 class Game extends Phaser.Scene {
+  private centerTop: any;
+  private tweenCenterTop: Phaser.Tweens.Tween;
+
   private player1: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private scoreText1: Phaser.GameObjects.Text;
   private score1: number;
@@ -104,7 +107,7 @@ class Game extends Phaser.Scene {
     sky.displayWidth = WIDTH;
     sky.displayHeight = HEIGHT;
 
-    const platforms = this.physics.add.staticGroup();
+    const platforms = this.physics.add.group({ immovable: true, allowGravity: false });
     const ground = platforms.create(WIDTH / 2, HEIGHT - 16, 'platform');
     ground.displayWidth = WIDTH;
     ground.refreshBody();
@@ -116,9 +119,22 @@ class Game extends Phaser.Scene {
     mini.refreshBody();
     platforms.create(50, 300, 'platform');
     platforms.create(875, 225, 'platform');
-    const centerTop = platforms.create(400, 150, 'platform');
-    centerTop.displayWidth = 150;
-    centerTop.refreshBody();
+    this.centerTop = platforms.create(400, 150, 'platform');
+    this.centerTop.displayWidth = 150;
+    this.centerTop.refreshBody();
+    this.centerTop.setFrictionX(1);
+
+    this.tweenCenterTop = this.tweens.addCounter({
+      from: 100,
+      to: -100,
+      duration: 3000,
+      ease: Phaser.Math.Easing.Sine.InOut,
+      repeat: -1,
+      yoyo: true,
+      onUpdate: (tween, target) => {
+        this.centerTop.setVelocityX(target.value);
+      },
+    });
 
     const localHighScore = parseInt(localStorage.getItem('highscore')) || 0;
     this.highscore = {
@@ -208,7 +224,7 @@ class Game extends Phaser.Scene {
   private collectStar(player, star) {
     star.disableBody(true, true);
     if (this.stars.countActive(true) === 0) {
-      this.stars.children.iterate((child: any) => child.enableBody(true, child.x, 0, true, true));
+      this.stars.children.iterate((child: any, index: number) => child.enableBody(true, 12 + index * 70, 0, true, true));
     }
 
     if (player.name === PLAYER1) {
@@ -373,6 +389,9 @@ class Game extends Phaser.Scene {
   }
 
   private restartGame() {
+    this.centerTop.enableBody(true, 400, 150, true, true);
+    this.tweens.reset(this.tweenCenterTop);
+
     this.player1.enableBody(true, 100, HEIGHT - 32 - 24, true, true);
     this.player2.enableBody(true, 700, HEIGHT - 32 - 24, true, true);
     this.player1.clearTint();
@@ -384,7 +403,7 @@ class Game extends Phaser.Scene {
       this.player1.disableBody(true, true);
     }
 
-    this.stars.children.iterate((child: any) => child.enableBody(true, child.x, 0, true, true));
+    this.stars.children.iterate((child: any, index: number) => child.enableBody(true, 12 + index * 70, 0, true, true));
     this.bombs1.clear(true, true);
     this.bombs2.clear(true, true);
 
