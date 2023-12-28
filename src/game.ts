@@ -99,13 +99,11 @@ class Game extends Phaser.Scene {
     centerTop.refreshBody();
 
     this.player1 = this.physics.add.sprite(100, 400, 'yane', 5);
-    this.player1.setCollideWorldBounds(true);
     this.player1.setName(PLAYER1);
     this.physics.add.collider(this.player1, platforms);
     this.createPlayerAnims(this.player1.name, 'yane');
 
     this.player2 = this.physics.add.sprite(700, 400, 'jelko');
-    this.player2.setCollideWorldBounds(true);
     this.player2.setName(PLAYER2);
     this.physics.add.collider(this.player2, platforms);
     this.createPlayerAnims(this.player2.name, 'jelko');
@@ -345,19 +343,19 @@ class Game extends Phaser.Scene {
         up: this.cursors.up,
         down: this.cursors.down,
       });
+    } else if (this.gameMode === 'TOUCHY') {
+      this.bindPlayerTouch(this.player1);
     }
 
-    if (this.gameMode === 'TOUCHY') {
-      this.bindPlayerTouch(this.player1);
-    } else if (this.gameMode === 'TOUCHJ') {
-      this.bindPlayerTouch(this.player2);
-    } else {
+    if (this.gameMode.includes('VS') || this.gameMode === 'JELKO') {
       this.bindPlayerKeys(this.player2, {
         left: this.cursors.left,
         right: this.cursors.right,
         up: this.cursors.up,
         down: this.cursors.down,
       });
+    } else if (this.gameMode === 'TOUCHJ') {
+      this.bindPlayerTouch(this.player2);
     }
   }
 
@@ -387,6 +385,8 @@ class Game extends Phaser.Scene {
     if (keys.down.isDown && !player.body.touching.down) {
       player.setVelocityY(600);
     }
+
+    this.addPortalEffect(player);
   }
 
   private bindPlayerTouch(player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody) {
@@ -405,9 +405,20 @@ class Game extends Phaser.Scene {
       if (this.buttonDown.getBounds().contains(this.input.activePointer.downX, this.input.activePointer.downY) && !player.body.touching.down) {
         player.setVelocityY(600);
       }
+
+      this.addPortalEffect(player);
     } else {
       player.setVelocityX(0);
       player.anims.play(player.name + '_turn');
+    }
+  }
+
+  private addPortalEffect(player: Phaser.Physics.Arcade.Sprite & { body: Phaser.Physics.Arcade.Body }) {
+    if (player.x < 0) {
+      player.setX(WIDTH);
+    }
+    if (player.x > WIDTH) {
+      player.setX(0);
     }
   }
 }
