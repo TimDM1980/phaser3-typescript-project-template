@@ -5,6 +5,8 @@ const HEIGHT = 600;
 const PLAYER1 = 'player1';
 const PLAYER2 = 'player2';
 
+// highscore, lives, score object
+
 class Game extends Phaser.Scene {
   private player1: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   private scoreText1: Phaser.GameObjects.Text;
@@ -156,50 +158,6 @@ class Game extends Phaser.Scene {
     this.gameState = 'GAMEOVER';
   }
 
-  private restartGame() {
-    this.player1.enableBody(true, 100, HEIGHT - 32 - 24, true, true);
-    this.player2.enableBody(true, 700, HEIGHT - 32 - 24, true, true);
-    this.player1.clearTint();
-    this.player2.clearTint();
-    if (this.gameMode === 'YANE' || this.gameMode === 'TOUCHY') {
-      this.player2.disableBody(true, true);
-    }
-    if (this.gameMode === 'JELKO' || this.gameMode === 'TOUCHJ') {
-      this.player1.disableBody(true, true);
-    }
-
-    this.stars.children.iterate((child: any) => child.enableBody(true, child.x, 0, true, true));
-    this.bombs1.clear(true, true);
-    this.bombs2.clear(true, true);
-
-    this.score1 = 0;
-    this.score2 = 0;
-    this.scoreText1?.destroy();
-    this.scoreText2?.destroy();
-    if (['YANE', 'VSA', 'VSQ', 'TOUCHY'].includes(this.gameMode)) {
-      this.scoreText1 = this.add.text(16, 16, 'Score: 0', {
-        fontSize: '32px',
-        color: '#ff00a6',
-      });
-    }
-    if (['JELKO', 'VSA', 'VSQ', 'TOUCHJ'].includes(this.gameMode)) {
-      this.scoreText2 = this.add.text(600, 16, 'Score: 0', {
-        fontSize: '32px',
-        color: '#ff9900',
-      });
-    }
-
-    if (this.gameMode.includes('TOUCH')) {
-      this.buttons.setVisible(true);
-    } else {
-      this.buttons.setVisible(false);
-    }
-
-    this.gameState = 'PLAYING';
-    this.instructionsText.setVisible(false);
-    this.physics.resume();
-  }
-
   private createPlayerAnims(playerName: string, spriteKey: string) {
     this.anims.create({
       key: playerName + '_left',
@@ -236,7 +194,7 @@ class Game extends Phaser.Scene {
       this.scoreText2.setText('Score: ' + this.score2);
     }
 
-    const numberOfBombsToThrow = Math.ceil((player.name === PLAYER1 ? this.score1 : this.score2) / 120);
+    const numberOfBombsToThrow = Math.ceil((this.score1 + this.score2) / 120);
     for (let i = 0; i < numberOfBombsToThrow; i++) {
       this.throwBomb(player);
     }
@@ -357,6 +315,50 @@ class Game extends Phaser.Scene {
     } else if (this.gameMode === 'TOUCHJ') {
       this.bindPlayerTouch(this.player2);
     }
+  }
+
+  private restartGame() {
+    this.player1.enableBody(true, 100, HEIGHT - 32 - 24, true, true);
+    this.player2.enableBody(true, 700, HEIGHT - 32 - 24, true, true);
+    this.player1.clearTint();
+    this.player2.clearTint();
+    if (this.gameMode === 'YANE' || this.gameMode === 'TOUCHY') {
+      this.player2.disableBody(true, true);
+    }
+    if (this.gameMode === 'JELKO' || this.gameMode === 'TOUCHJ') {
+      this.player1.disableBody(true, true);
+    }
+
+    this.stars.children.iterate((child: any) => child.enableBody(true, child.x, 0, true, true));
+    this.bombs1.clear(true, true);
+    this.bombs2.clear(true, true);
+
+    this.score1 = 0;
+    this.score2 = 0;
+    this.scoreText1?.destroy();
+    this.scoreText2?.destroy();
+    if (['YANE', 'VSA', 'VSQ', 'TOUCHY'].includes(this.gameMode)) {
+      this.scoreText1 = this.add.text(16, 16, 'Score: 0', {
+        fontSize: '32px',
+        color: '#ff00a6',
+      });
+    }
+    if (['JELKO', 'VSA', 'VSQ', 'TOUCHJ'].includes(this.gameMode)) {
+      this.scoreText2 = this.add.text(600, 16, 'Score: 0', {
+        fontSize: '32px',
+        color: '#ff9900',
+      });
+    }
+
+    if (this.gameMode.includes('TOUCH')) {
+      this.buttons.setVisible(true);
+    } else {
+      this.buttons.setVisible(false);
+    }
+
+    this.gameState = 'PLAYING';
+    this.instructionsText.setVisible(false);
+    this.physics.resume();
   }
 
   private bindPlayerKeys(
