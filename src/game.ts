@@ -2,6 +2,15 @@ import * as Phaser from 'phaser';
 
 const WIDTH = 800;
 const HEIGHT = 600;
+const INSTRUCTIONS = [
+  'Press J to play as Jelko (arrow keys)',
+  'Press Y to play as Yane (arrow keys)',
+  'Tap Jelko to play as Jelko (touch screen)',
+  'Tap Yane to play as Yane (touch screen)',
+  'Press V for VS play on Qwerty keyboard (WSAD and arrow keys)',
+  'Press B for VS play on Azerty keyboard (ZSQD and arrow keys)',
+  'Press H to reset highscore',
+];
 const PLAYER1 = 'player1';
 const PLAYER2 = 'player2';
 const TINTS = {
@@ -111,6 +120,26 @@ class Game extends Phaser.Scene {
     centerTop.displayWidth = 150;
     centerTop.refreshBody();
 
+    const localHighScore = parseInt(localStorage.getItem('highscore')) || 0;
+    this.highscore = {
+      value: localHighScore,
+      text: this.add
+        .text(WIDTH / 2, 16, `Highscore: ${localHighScore}`, {
+          fontSize: '24px',
+          color: '#000000',
+        })
+        .setOrigin(0.5, 0),
+    };
+
+    this.instructionsText = this.add
+      .text(WIDTH / 2, 64, INSTRUCTIONS, {
+        fontSize: '16px',
+        color: '#000000',
+        backgroundColor: '#ffffff',
+        align: 'center',
+      })
+      .setOrigin(0.5, 0);
+
     this.player1 = this.physics.add.sprite(100, 400, 'yane', 5);
     this.player1.setName(PLAYER1);
     this.physics.add.collider(this.player1, platforms);
@@ -150,35 +179,6 @@ class Game extends Phaser.Scene {
     this.physics.add.collider(this.bombs2, platforms);
     this.physics.add.overlap(this.player1, this.bombs2, this.hitBomb, null, this);
     this.physics.add.overlap(this.player2, this.bombs1, this.hitBomb, null, this);
-
-    const localHighScore = parseInt(localStorage.getItem('highscore')) || 0;
-    this.highscore = {
-      value: localHighScore,
-      text: this.add
-        .text(WIDTH / 2, 16, `Highscore: ${localHighScore}`, {
-          fontSize: '24px',
-          color: '#000000',
-        })
-        .setOrigin(0.5, 0),
-    };
-
-    const instructions = [
-      'Press J to play as Jelko (arrow keys)',
-      'Press Y to play as Yane (arrow keys)',
-      'Tap Jelko to play as Jelko (touch screen)',
-      'Tap Yane to play as Yane (touch screen)',
-      'Press V for VS play on Qwerty keyboard (WSAD and arrow keys)',
-      'Press B for VS play on Azerty keyboard (ZSQD and arrow keys)',
-      'Press H to reset highscore',
-    ];
-    this.instructionsText = this.add
-      .text(WIDTH / 2, 64, instructions, {
-        fontSize: '16px',
-        color: '#000000',
-        backgroundColor: '#ffffff',
-        align: 'center',
-      })
-      .setOrigin(0.5, 0);
 
     this.gameState = 'GAMEOVER';
   }
