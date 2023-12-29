@@ -182,6 +182,7 @@ class Game extends Phaser.Scene {
       key: 'star',
       repeat: 11,
       setXY: { x: 12, y: 0, stepX: 70 },
+      collideWorldBounds: true,
     });
     this.physics.add.collider(this.stars, platforms);
     this.physics.add.overlap(this.player1, this.stars, this.collectStar, null, this);
